@@ -1,36 +1,36 @@
 {
-    "frame_0000.jpg": {
-        "filename": "frame_0000.jpg",
-        "class": "real",
-        "confidence": 0.4231492578983307,
-        "face_detected": true,
-        "no_face": false
-    },
     "frame_0001.jpg": {
         "filename": "frame_0001.jpg",
-        "class": "real",
-        "confidence": 0.3194608986377716,
+        "class": "fake",
+        "confidence": 0.9861593246459961,
         "face_detected": true,
         "no_face": false
     },
     "frame_0002.jpg": {
         "filename": "frame_0002.jpg",
         "class": "fake",
-        "confidence": 0.9401390552520752,
+        "confidence": 0.9605815410614014,
         "face_detected": true,
         "no_face": false
     },
     "frame_0003.jpg": {
         "filename": "frame_0003.jpg",
-        "class": "real",
-        "confidence": 0.42974984645843506,
+        "class": "fake",
+        "confidence": 0.9946697950363159,
         "face_detected": true,
         "no_face": false
     },
-    "01__hugging_happy.mp4": {
-        "filename": "01__hugging_happy.mp4",
+    "frame_0004.jpg": {
+        "filename": "frame_0004.jpg",
         "class": "fake",
-        "confidence": 0.6792467717940991,
+        "confidence": 0.9804559350013733,
+        "face_detected": true,
+        "no_face": false
+    },
+    "frame_0005.jpg": {
+        "filename": "frame_0005.jpg",
+        "class": "fake",
+        "confidence": 0.9896333813667297,
         "face_detected": true,
         "no_face": false
     }

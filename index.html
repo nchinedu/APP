@@ -224,7 +224,7 @@
                         validFiles = false;
                         return;
                     }
-                    fileBlobs[file.name] = file; // Store file for modal (previews only)
+                    fileBlobs[file.name] = file;
                 });
                 if (!validFiles) return;
                 previewContainer.classList.remove('hidden');
@@ -349,15 +349,13 @@
                     if (processed >= total) {
                         eventSource.close();
                         progressContainer.classList.add('hidden');
-                        resultDiv.innerHTML = `<span class="fade-in">Processed ${total} file(s).</span>`;
-                        updateResults();
                     }
                 }
             };
             eventSource.onerror = () => {
                 eventSource.close();
                 progressContainer.classList.add('hidden');
-                resultDiv.innerHTML = `<span class="text-red-600 fade-in">Error: Failed to process files</span>`;
+                resultDiv.innerHTML = `<span class="text-red-600 fade-in">Error: Failed to receive progress updates</span>`;
             };
 
             try {
@@ -365,13 +363,22 @@
                     method: 'POST',
                     body: formData
                 });
-                if (!response.ok) {
-                    throw new Error('Upload failed');
+                const data = await response.json();
+                if (response.ok) {
+                    resultDiv.innerHTML = `<span class="fade-in">Processed ${data.length} file(s).</span>`;
+                    updateResults();
+                    // Check for errors in results
+                    const errors = data.filter(r => r.error);
+                    if (errors.length > 0) {
+                        resultDiv.innerHTML += `<br><span class="text-red-600 fade-in">Errors: ${errors.map(e => e.error).join(', ')}</span>`;
+                    }
+                } else {
+                    throw new Error(data.error || 'Upload failed');
                 }
             } catch (error) {
                 eventSource.close();
                 progressContainer.classList.add('hidden');
-                resultDiv.innerHTML = `<span class="text-red-600 fade-in">Error: Failed to connect to server</span>`;
+                resultDiv.innerHTML = `<span class="text-red-600 fade-in">Error: ${error.message}</span>`;
             }
         });
 
@@ -392,7 +399,7 @@
                 }
 
                 for (const [filename, result] of Object.entries(data)) {
-                    const container = document.createElement('div-Down');
+                    const container = document.createElement('div');
                     container.className = 'file-item fade-in';
                     let element;
                     if (filename.toLowerCase().endsWith('.jpg') || filename.toLowerCase().endsWith('.jpeg') || filename.toLowerCase().endsWith('.png')) {
@@ -410,7 +417,7 @@
                     element.dataset.filename = filename;
                     element.onerror = () => {
                         console.error(`Failed to load media: /uploads/${filename}`);
-                        element.src = ''; // Fallback to prevent broken image icon
+                        element.src = '';
                     };
                     element.addEventListener('click', () => showModal(filename));
                     container.appendChild(element);
