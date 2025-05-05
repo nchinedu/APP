@@ -1,0 +1,37 @@
+{
+    "frame_0000.jpg": {
+        "filename": "frame_0000.jpg",
+        "class": "real",
+        "confidence": 0.4231492578983307,
+        "face_detected": true,
+        "no_face": false
+    },
+    "frame_0001.jpg": {
+        "filename": "frame_0001.jpg",
+        "class": "real",
+        "confidence": 0.3194608986377716,
+        "face_detected": true,
+        "no_face": false
+    },
+    "frame_0002.jpg": {
+        "filename": "frame_0002.jpg",
+        "class": "fake",
+        "confidence": 0.9401390552520752,
+        "face_detected": true,
+        "no_face": false
+    },
+    "frame_0003.jpg": {
+        "filename": "frame_0003.jpg",
+        "class": "real",
+        "confidence": 0.42974984645843506,
+        "face_detected": true,
+        "no_face": false
+    },
+    "01__hugging_happy.mp4": {
+        "filename": "01__hugging_happy.mp4",
+        "class": "fake",
+        "confidence": 0.6792467717940991,
+        "face_detected": true,
+        "no_face": false
+    }
+}

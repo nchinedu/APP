@@ -1,0 +1,271 @@
+from flask import Flask, request, jsonify, send_from_directory, Response
+import tensorflow as tf
+import numpy as np
+from PIL import Image
+import os
+import json
+import cv2
+import tempfile
+import shutil
+import logging
+
+app = Flask(__name__)
+
+# Setup logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Load the TFLite model and allocate tensors
+try:
+    interpreter = tf.lite.Interpreter(model_path="xceptionnet_optimized.tflite")
+    interpreter.allocate_tensors()
+except Exception as e:
+    app.logger.error(f"Failed to load TFLite model: {str(e)}")
+    raise
+
+# Get input and output tensors
+input_details = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
+
+# Create directories for uploaded files and temporary frames
+UPLOAD_FOLDER = 'uploads'
+TEMP_FOLDER = 'TempFrames'
+for folder in [UPLOAD_FOLDER, TEMP_FOLDER]:
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+
+# Dictionary to store confidences and progress
+image_confidences = {}
+progress_data = {'processed': 0, 'total': 0}
+
+# Configuration
+THRESHOLD = 0.3
+LABEL_MAPPING = 'real_high'
+FRAME_RATE = 1
+MAX_FRAMES = 30
+ALLOWED_IMAGE_EXTS = {'.jpg', '.jpeg', '.png'}
+ALLOWED_VIDEO_EXTS = {'.mp4', '.avi', '.mov'}
+
+# Load Haar Cascade for face detection
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+if face_cascade.empty():
+    app.logger.error("Failed to load Haar Cascade classifier")
+    raise RuntimeError("Failed to load Haar Cascade classifier")
+
+def detect_and_crop_face(img_array):
+    try:
+        gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+        
+        if len(faces) > 0:
+            largest_face = max(faces, key=lambda f: f[2] * f[3])
+            x, y, w, h = largest_face
+            padding = int(max(w, h) * 0.2)
+            x = max(0, x - padding)
+            y = max(0, y - padding)
+            w = min(img_array.shape[1], w + 2 * padding)
+            h = min(img_array.shape[0], h + 2 * padding)
+            face_img = img_array[y:y+h, x:x+w]
+            face_img = cv2.resize(face_img, (299, 299))
+            return face_img, True
+        else:
+            return cv2.resize(img_array, (299, 299)), False
+    except Exception as e:
+        app.logger.error(f"Error in detect_and_crop_face: {str(e)}")
+        raise
+
+def process_image(img_array, filename):
+    try:
+        processed_img, face_detected = detect_and_crop_face(img_array)
+        
+        if not face_detected:
+            return {
+                'filename': filename,
+                'no_face': True
+            }
+        
+        img_array = np.array(processed_img, dtype=np.float32)
+        img_array = (img_array / 127.5) - 1.0
+        img_array = np.expand_dims(img_array, axis=0)
+
+        interpreter.set_tensor(input_details[0]['index'], img_array)
+        interpreter.invoke()
+        output_data = interpreter.get_tensor(output_details[0]['index'])
+        score = output_data[0][0]
+
+        if LABEL_MAPPING == 'real_high':
+            predicted_class = 'real' if score > THRESHOLD else 'fake'
+            confidence = score if predicted_class == 'real' else 1.0 - score
+        else:
+            predicted_class = 'fake' if score > THRESHOLD else 'real'
+            confidence = score if predicted_class == 'fake' else 1.0 - score
+
+        return {
+            'filename': filename,
+            'class': predicted_class,
+            'confidence': float(confidence),
+            'face_detected': face_detected,
+            'no_face': False
+        }
+    except Exception as e:
+        app.logger.error(f"Error processing image {filename}: {str(e)}")
+        return {'error': f"Failed to process image: {str(e)}", 'filename': filename}
+
+def process_video(file):
+    try:
+        video_path = os.path.join(UPLOAD_FOLDER, file.filename)
+        file.save(video_path)
+        app.logger.debug(f"Saved video: {video_path}")
+
+        temp_dir = tempfile.mkdtemp(dir=TEMP_FOLDER)
+        frame_results = []
+
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            return {'error': f'Cannot open video {file.filename}', 'filename': file.filename}
+
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        frame_interval = int(fps / FRAME_RATE) if fps > 0 else 1
+        frame_count = 0
+
+        while cap.isOpened() and frame_count < MAX_FRAMES:
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            if cap.get(cv2.CAP_PROP_POS_FRAMES) % frame_interval == 0:
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                result = process_image(frame_rgb, file.filename)
+                frame_results.append(result)
+                frame_count += 1
+
+        cap.release()
+
+        if not any(r.get('face_detected', False) for r in frame_results):
+            return {
+                'filename': file.filename,
+                'no_face': True
+            }
+
+        valid_results = [r for r in frame_results if not r.get('no_face', False)]
+        if not valid_results:
+            return {
+                'filename': file.filename,
+                'no_face': True
+            }
+
+        fake_count = sum(1 for r in valid_results if r['class'] == 'fake')
+        face_detected_count = sum(1 for r in frame_results if r.get('face_detected', False))
+        total_frames = len(valid_results)
+        predicted_class = 'fake' if fake_count / total_frames >= 0.5 else 'real'
+        avg_confidence = sum(r['confidence'] for r in valid_results if r['class'] == predicted_class) / total_frames
+        face_detected = face_detected_count > 0
+
+        return {
+            'filename': file.filename,
+            'class': predicted_class,
+            'confidence': avg_confidence,
+            'face_detected': face_detected,
+            'no_face': False
+        }
+
+    except Exception as e:
+        app.logger.error(f"Error processing video {file.filename}: {str(e)}")
+        return {'error': str(e), 'filename': file.filename}
+    finally:
+        if os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
+
+@app.route('/')
+def serve_index():
+    return send_from_directory('.', 'index.html')
+
+@app.route('/uploads/<filename>')
+def serve_uploaded_file(filename):
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
+    if os.path.exists(file_path):
+        return send_from_directory(UPLOAD_FOLDER, filename)
+    else:
+        app.logger.error(f"File not found: {file_path}")
+        return jsonify({'error': 'File not found'}), 404
+
+@app.route('/progress')
+def progress():
+    def generate():
+        while True:
+            yield f"data: {json.dumps(progress_data)}\n\n"
+            # Sleep briefly to avoid overwhelming the client
+            import time
+            time.sleep(0.1)
+    return Response(generate(), mimetype='text/event-stream')
+
+@app.route('/upload', methods=['POST'])
+def upload_files():
+    global progress_data
+    if 'files' not in request.files:
+        return jsonify({'error': 'No files provided'}), 400
+
+    files = request.files.getlist('files')
+    if not files or all(file.filename == '' for file in files):
+        return jsonify({'error': 'No files selected'}), 400
+
+    total_files = len(files)
+    progress_data = {'processed': 0, 'total': total_files}
+    results = []
+
+    for file in files:
+        if file and file.filename:
+            file_ext = os.path.splitext(file.filename)[1].lower()
+            if file_ext in ALLOWED_IMAGE_EXTS:
+                try:
+                    file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+                    file.save(file_path)
+                    app.logger.debug(f"Saved file: {file_path}")
+                    img = Image.open(file_path).convert('RGB')
+                    img_array = np.array(img)
+                    result = process_image(img_array, file.filename)
+                    results.append(result)
+                    image_confidences[file.filename] = result
+                except Exception as e:
+                    app.logger.error(f"Error processing image {file.filename}: {str(e)}")
+                    results.append({'error': f"Failed to process image: {str(e)}", 'filename': file.filename})
+            elif file_ext in ALLOWED_VIDEO_EXTS:
+                result = process_video(file)
+                results.append(result)
+                if 'error' not in result:
+                    image_confidences[file.filename] = result
+                else:
+                    app.logger.error(f"Error in video result {file.filename}: {result['error']}")
+            else:
+                results.append({'error': f'Unsupported file type: {file_ext}', 'filename': file.filename})
+            
+            progress_data['processed'] += 1
+            app.logger.debug(f"Progress: {progress_data['processed']}/{progress_data['total']}")
+
+    try:
+        with open('image_confidences.json', 'w') as f:
+            json.dump(image_confidences, f, indent=4)
+    except Exception as e:
+        app.logger.error(f"Failed to save image_confidences.json: {str(e)}")
+        return jsonify({'error': 'Failed to save results'}), 500
+
+    return jsonify(results)
+
+@app.route('/results')
+def get_results():
+    return jsonify(image_confidences)
+
+@app.route('/clear', methods=['POST'])
+def clear_results():
+    global image_confidences, progress_data
+    image_confidences = {}
+    progress_data = {'processed': 0, 'total': 0}
+    try:
+        with open('image_confidences.json', 'w') as f:
+            json.dump(image_confidences, f, indent=4)
+        return jsonify({'message': 'Results cleared successfully'})
+    except Exception as e:
+        app.logger.error(f"Error clearing results: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True)
