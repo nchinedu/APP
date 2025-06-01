@@ -1,37 +1,13 @@
 {
-    "frame_0001.jpg": {
-        "filename": "frame_0001.jpg",
-        "class": "fake",
-        "confidence": 0.9861593246459961,
+    "gettyimages-1242119374-612x612.jpg": {
+        "filename": "gettyimages-1242119374-612x612.jpg",
+        "class": "real",
+        "confidence": 0.9958940148353577,
         "face_detected": true,
         "no_face": false
     },
-    "frame_0002.jpg": {
-        "filename": "frame_0002.jpg",
-        "class": "fake",
-        "confidence": 0.9605815410614014,
-        "face_detected": true,
-        "no_face": false
-    },
-    "frame_0003.jpg": {
-        "filename": "frame_0003.jpg",
-        "class": "fake",
-        "confidence": 0.9946697950363159,
-        "face_detected": true,
-        "no_face": false
-    },
-    "frame_0004.jpg": {
-        "filename": "frame_0004.jpg",
-        "class": "fake",
-        "confidence": 0.9804559350013733,
-        "face_detected": true,
-        "no_face": false
-    },
-    "frame_0005.jpg": {
-        "filename": "frame_0005.jpg",
-        "class": "fake",
-        "confidence": 0.9896333813667297,
-        "face_detected": true,
-        "no_face": false
+    "2nd_Training and Validation Accuracy.png": {
+        "filename": "2nd_Training and Validation Accuracy.png",
+        "no_face": true
     }
 }

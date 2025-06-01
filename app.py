@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory, Response
+from flask import Flask, request, jsonify, send_from_directory, Response, render_template
 import tensorflow as tf
 import numpy as np
 from PIL import Image
@@ -176,8 +176,16 @@ def process_video(file):
             shutil.rmtree(temp_dir)
 
 @app.route('/')
-def serve_index():
-    return send_from_directory('.', 'index.html')
+def serve_home():
+    return render_template('homepage.html')
+
+@app.route('/image')
+def serve_image_processing():
+    return render_template('image-processing.html')
+
+@app.route('/video')
+def serve_video_processing():
+    return render_template('video-processing.html')
 
 @app.route('/uploads/<filename>')
 def serve_uploaded_file(filename):

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediaTool - Home</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .hero-bg {
+            background-image: url('https://via.placeholder.com/1500x600'); /* Replace with actual hero image */
+            background-size: cover;
+            background-position: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <header class="bg-white shadow p-4 flex justify-between items-center">
+        <div class="flex items-center">
+            <span class="text-xl font-bold text-gray-800">MediaTool</span>
+        </div>
+        <nav class="space-x-4">
+            <a href="/" class="text-gray-600 hover:text-gray-900 font-medium">Home</a>
+            <a href="/image" class="text-gray-600 hover:text-gray-900 font-medium">Image</a>
+            <a href="/video" class="text-gray-600 hover:text-gray-900 font-medium">Video</a>
+        </nav>
+        <div><span class="cursor-pointer text-xl">👤</span></div>
+    </header>
+    <main class="flex-grow flex items-center justify-center p-4">
+        <section class="bg-gray-200 p-8 rounded-lg text-center max-w-4xl hero-bg">
+            <h1 class="text-4xl font-bold mb-4 text-gray-800">Transform Your Media with Ease</h1>
+            <p class="mb-6 text-gray-700">Our powerful tools allow you to enhance and manipulate your images and videos effortlessly. Powered by XceptionNet with post-quantization optimization for efficient deepfake detection. Get started today!</p>
+            <div class="space-x-4">
+                <a href="/image" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">Image Processing</a>
+                <a href="/video" class="bg-white text-gray-800 px-4 py-2 rounded border hover:bg-gray-100 transition">Video Processing</a>
+            </div>
+        </section>
+    </main>
+    <footer class="bg-gray-800 text-white py-4">
+        <div class="container mx-auto px-4 text-center">
+            <p>© 2025 Deepfake Detection Project. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

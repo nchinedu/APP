@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediaTool - Video Processing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { position: relative; max-width: 80vw; max-height: 80vh; }
+        .modal-content video { width: 100%; height: 100%; object-fit: contain; }
+        .modal-info { position: absolute; top: 10px; left: 10px; background-color: rgba(255, 255, 255, 0.9); padding: 10px; border-radius: 5px; font-size: 14px; color: #1f2937; }
+        .close { position: absolute; top: 10px; right: 20px; color: white; font-size: 30px; cursor: pointer; }
+        .section-container { margin-bottom: 2rem; }
+        .section-title { font-size: 1.5rem; font-weight: bold; color: #1f2937; margin-bottom: 1rem; }
+        .file-item { text-align: center; }
+        .file-item video { cursor: pointer; transition: opacity 0.3s; }
+        .file-item video:hover { opacity: 0.9; }
+        .progress-container { width: 100%; background-color: #e5e7eb; border-radius: 9999px; overflow: hidden; margin: 1rem 0; }
+        .progress-bar { height: 1rem; background-color: #3b82f6; width: 0%; transition: width 0.3s ease-in-out; }
+        .progress-text { text-align: center; font-size: 0.875rem; color: #1f2937; margin-top: 0.5rem; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <header class="bg-white shadow p-4 flex justify-between items-center">
+        <div class="flex items-center">
+            <span class="text-xl font-bold text-gray-800">MediaTool</span>
+        </div>
+        <nav class="space-x-4">
+            <a href="/" class="text-gray-600 hover:text-gray-900 font-medium">Home</a>
+            <a href="/image" class="text-gray-600 hover:text-gray-900 font-medium">Image</a>
+            <a href="/video" class="text-gray-900 font-medium">Video</a>
+        </nav>
+        <div><span class="cursor-pointer text-xl">👤</span></div>
+    </header>
+    <main class="flex-grow flex items-center justify-center p-4">
+        <section class="text-center max-w-2xl">
+            <h1 class="text-3xl font-bold mb-4 text-gray-800">Upload a Video</h1>
+            <div id="video-upload-area" class="border-2 border-dashed border-gray-300 p-10 rounded-lg">
+                <p class="mb-2 text-gray-700">Drag and drop or click to upload</p>
+                <p class="text-gray-500">Upload a video to start processing it. We support MP4, AVI, MOV formats.</p>
+                <input type="file" id="video-input" multiple accept="video/mp4,video/avi,video/mov" class="hidden">
+                <button id="video-browse" class="mt-4 bg-gray-200 px-4 py-2 rounded hover:bg-gray-300 transition">Select a Video</button>
+                <div id="video-preview" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4 hidden"></div>
+                <div id="video-progress" class="mt-4 hidden">
+                    <div class="progress-container">
+                        <div id="video-progress-bar" class="progress-bar"></div>
+                    </div>
+                    <div id="video-progress-text" class="progress-text">0%</div>
+                </div>
+                <div id="video-result" class="text-center text-lg text-gray-700 mt-4"></div>
+                <div id="video-player" class="mt-4 hidden">
+                    <video id="video-element" controls class="w-full max-w-md mx-auto"></video>
+                    <div class="mt-2">
+                        <button id="prev-frame" class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">Prev Frame</button>
+                        <button id="next-frame" class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300 ml-2">Next Frame</button>
+                    </div>
+                </div>
+                <div class="flex justify-end mt-4">
+                    <button id="video-clear" class="bg-red-600 text-white py-2 px-6 rounded-lg hover:bg-red-700 transition font-medium">Clear Results</button>
+                </div>
+                <div id="video-real-section" class="section-container hidden">
+                    <h2 class="section-title">Real</h2>
+                    <div id="video-real-files" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+                </div>
+                <div id="video-fake-section" class="section-container hidden">
+                    <h2 class="section-title">Fake</h2>
+                    <div id="video-fake-files" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+                </div>
+                <div id="video-no-face-section" class="section-container hidden">
+                    <h2 class="section-title">No Face Detected</h2>
+                    <div id="video-no-face-files" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <div id="modal" class="modal">
+        <span class="close">×</span>
+        <div class="modal-content">
+            <video id="modal-video" controls></video>
+            <div id="modal-info" class="modal-info"></div>
+        </div>
+    </div>
+    <footer class="bg-gray-800 text-white py-4">
+        <div class="container mx-auto px-4 text-center">
+            <p>© 2025 Deepfake Detection Project. All rights reserved.</p>
+        </div>
+    </footer>
+    <script src="/static/script.js"></script>
+</body>
+</html>
