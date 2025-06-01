@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const pagePath = window.location.pathname;
-    let uploadArea, input, browseBtn, startProcessingBtn, preview, progress, progressBar, progressText, resultDiv, clearButton, realSection, fakeSection, noFaceSection, realFiles, fakeFiles, noFaceFiles, modal, modalImage, modalVideo, modalInfo, closeModal, videoPlayer, videoElement, prevFrame, nextFrame, highlightCanvas, frameInfo;
+    let uploadArea, input, browseBtn, startProcessingBtn, preview, progress, progressBar, progressText, resultDiv, clearButton, realSection, fakeSection, noFaceSection, realFiles, fakeFiles, noFaceFiles, modal, modalImage, modalVideo, modalInfo, closeModal, videoPlayer, videoElement, prevFrame, nextFrame, highlightCanvas, frameInfo, videoSelect;
 
     // Initialize page-specific elements
     if (pagePath === '/image') {
@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         nextFrame = document.getElementById('next-frame');
         highlightCanvas = document.getElementById('highlight-canvas');
         frameInfo = document.getElementById('frame-info');
+        videoSelect = document.getElementById('video-select');
         const highlightCtx = highlightCanvas.getContext('2d');
     } else {
         return; // Homepage doesn't need JavaScript
@@ -204,10 +205,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (processed >= total) {
                     eventSource.close();
                     progress.classList.add('hidden');
-                    if (pagePath === '/video' && files.length === 1) {
+                    if (pagePath === '/video' && files.length > 0) {
                         videoPlayer.classList.remove('hidden');
-                        videoElement.src = URL.createObjectURL(files[0]);
-                        loadFrameHighlights();
+                        loadVideoAndFrames();
                     }
                 }
             }
@@ -238,19 +238,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Update results
+    // Update results and populate dropdown
+    let allResults = {};
     async function updateResults() {
         try {
             const data = await fetchResults();
-            realFiles.innerHTML = '';
-            fakeFiles.innerHTML = '';
-            noFaceFiles.innerHTML = '';
-            realSection.classList.add('hidden');
-            fakeSection.classList.add('hidden');
-            noFaceSection.classList.add('hidden');
-
-            if (Object.keys(data).length === 0) return;
-
+            allResults = data; // Store all results for filtering
+            videoSelect.innerHTML = '<option value="">Select a Video</option>';
             for (const [videoFilename, result] of Object.entries(data)) {
                 const ext = videoFilename.split('.').pop().toLowerCase();
                 const isImage = ['jpg', 'jpeg', 'png'].includes(ext);
@@ -296,53 +290,77 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                // Handle video frame results
-                if (isVideo && result.frame_results) {
-                    result.frame_results.forEach(frame => {
-                        const frameFilename = frame.filename;
-                        const container = document.createElement('div');
-                        container.className = 'file-item fade-in';
-                        const element = document.createElement('img');
-                        // Use the frame image if available, or fallback to video thumbnail
-                        element.src = `/TempFrames/${frameFilename}.jpg`; // Assuming frames are saved as images
-                        element.alt = frameFilename;
-                        element.title = frameFilename;
-                        element.className = 'w-full h-32 object-cover rounded-lg';
-                        element.dataset.filename = frameFilename;
-                        element.onerror = () => {
-                            console.error(`Failed to load frame: /TempFrames/${frameFilename}.jpg`);
-                            element.src = '';
-                        };
-                        element.addEventListener('click', () => {
-                            // On click, jump to the frame in the video player
-                            const frameNum = parseInt(frameFilename.split('_frame_')[1]);
-                            videoElement.currentTime = frameNum * frameInterval;
-                        });
-                        container.appendChild(element);
-
-                        const infoDiv = document.createElement('div');
-                        infoDiv.className = 'text-sm text-gray-600 mt-2';
-                        infoDiv.innerHTML = `<span class="truncate">Frame ${frameFilename.split('_frame_')[1]}</span>`;
-                        if (!frame.no_face) {
-                            infoDiv.innerHTML += `<br>Confidence: ${(frame.confidence * 100).toFixed(2)}%`;
-                        }
-                        container.appendChild(infoDiv);
-
-                        if (frame.no_face) {
-                            noFaceSection.classList.remove('hidden');
-                            noFaceFiles.appendChild(container);
-                        } else if (frame.class === 'real') {
-                            realSection.classList.remove('hidden');
-                            realFiles.appendChild(container);
-                        } else {
-                            fakeSection.classList.remove('hidden');
-                            fakeFiles.appendChild(container);
-                        }
-                    });
+                // Populate video dropdown
+                if (isVideo) {
+                    const option = document.createElement('option');
+                    option.value = videoFilename;
+                    option.textContent = videoFilename;
+                    videoSelect.appendChild(option);
                 }
             }
+            // Initially, show frames for the first video or none if no video is selected
+            filterFramesByVideo();
         } catch (error) {
             resultDiv.innerHTML = `<span class="text-red-600 fade-in">Error: Failed to fetch results</span>`;
+        }
+    }
+
+    // Filter frames based on selected video
+    function filterFramesByVideo() {
+        const selectedVideo = videoSelect.value;
+        realFiles.innerHTML = '';
+        fakeFiles.innerHTML = '';
+        noFaceFiles.innerHTML = '';
+        realSection.classList.add('hidden');
+        fakeSection.classList.add('hidden');
+        noFaceSection.classList.add('hidden');
+
+        if (!selectedVideo) return; // Don't show any frames if no video is selected
+
+        const result = allResults[selectedVideo];
+        if (result && result.frame_results) {
+            result.frame_results.forEach(frame => {
+                const frameFilename = frame.filename;
+                const container = document.createElement('div');
+                container.className = 'file-item fade-in';
+                const element = document.createElement('img');
+                element.src = `/TempFrames/${frameFilename}.jpg`;
+                element.alt = frameFilename;
+                element.title = frameFilename;
+                element.className = 'w-full h-32 object-cover rounded-lg';
+                element.dataset.filename = frameFilename;
+                element.dataset.video = selectedVideo;
+                element.onerror = () => {
+                    console.error(`Failed to load frame: /TempFrames/${frameFilename}.jpg`);
+                    element.src = '';
+                };
+                element.addEventListener('click', () => {
+                    videoSelect.value = selectedVideo;
+                    loadVideoAndFrames();
+                    const frameNum = parseInt(frameFilename.split('_frame_')[1]);
+                    videoElement.currentTime = frameNum * frameInterval;
+                });
+                container.appendChild(element);
+
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'text-sm text-gray-600 mt-2';
+                infoDiv.innerHTML = `<span class="truncate">Frame ${frameFilename.split('_frame_')[1]}</span>`;
+                if (!frame.no_face) {
+                    infoDiv.innerHTML += `<br>Confidence: ${(frame.confidence * 100).toFixed(2)}%`;
+                }
+                container.appendChild(infoDiv);
+
+                if (frame.no_face) {
+                    noFaceSection.classList.remove('hidden');
+                    noFaceFiles.appendChild(container);
+                } else if (frame.class === 'real') {
+                    realSection.classList.remove('hidden');
+                    realFiles.appendChild(container);
+                } else {
+                    fakeSection.classList.remove('hidden');
+                    fakeFiles.appendChild(container);
+                }
+            });
         }
     }
 
@@ -363,12 +381,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 preview.innerHTML = '';
                 preview.classList.add('hidden');
                 fileBlobs = {};
+                allResults = {};
                 if (pagePath === '/video') {
                     videoPlayer.classList.add('hidden');
                     videoElement.src = '';
                     highlightCanvas.width = 0;
                     highlightCanvas.height = 0;
                     frameInfo.style.display = 'none';
+                    videoSelect.innerHTML = '<option value="">Select a Video</option>';
                 }
             } else {
                 resultDiv.innerHTML = `<span class="text-red-600 fade-in">Error: ${data.error}</span>`;
@@ -410,16 +430,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        async function loadFrameHighlights() {
+        async function loadVideoAndFrames() {
+            const selectedVideo = videoSelect.value;
+            if (!selectedVideo || !fileBlobs[selectedVideo]) {
+                videoElement.src = '';
+                frameInfo.style.display = 'none';
+                return;
+            }
+            videoElement.src = URL.createObjectURL(fileBlobs[selectedVideo]);
             const results = await fetchResults();
-            const filename = Object.keys(results)[0]; // Assuming single video for now
-            if (results[filename] && results[filename].frame_results) {
-                frameResults = results[filename].frame_results.reduce((acc, frame) => {
+            if (results[selectedVideo] && results[selectedVideo].frame_results) {
+                frameResults = results[selectedVideo].frame_results.reduce((acc, frame) => {
                     const frameNum = parseInt(frame.filename.split('_frame_')[1]);
                     acc[frameNum] = frame;
                     return acc;
                 }, {});
             }
+            videoElement.load();
+            filterFramesByVideo(); // Update frames when video changes
         }
 
         videoElement.addEventListener('loadedmetadata', () => {
@@ -450,6 +478,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentTime = videoElement.currentTime;
             videoElement.currentTime = currentTime + frameInterval;
             updateFrameInfo(Math.floor((currentTime + frameInterval) * frameInterval));
+        });
+
+        videoSelect.addEventListener('change', () => {
+            loadVideoAndFrames();
+            filterFramesByVideo(); // Update frames on video selection
         });
     }
 

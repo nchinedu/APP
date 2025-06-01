@@ -41,9 +41,9 @@
             <h1 class="text-3xl font-bold mb-4 text-gray-800">Upload a Video</h1>
             <div id="video-upload-area" class="border-2 border-dashed border-gray-300 p-10 rounded-lg">
                 <p class="mb-2 text-gray-700">Drag and drop or click to upload</p>
-                <p class="text-gray-500">Upload a video to start processing it. We support MP4, AVI, MOV formats.</p>
+                <p class="text-gray-500">Upload videos to start processing. We support MP4, AVI, MOV formats.</p>
                 <input type="file" id="video-input" multiple accept="video/mp4,video/avi,video/mov" class="hidden">
-                <button id="video-browse" class="mt-4 bg-gray-200 px-4 py-2 rounded hover:bg-gray-300 transition">Select a Video</button>
+                <button id="video-browse" class="mt-4 bg-gray-200 px-4 py-2 rounded hover:bg-gray-300 transition">Select Videos</button>
                 <button id="video-start-processing" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition font-medium disabled:bg-blue-300" disabled>Start Processing</button>
                 <div id="video-preview" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4 hidden"></div>
                 <div id="video-progress" class="mt-4 hidden">
@@ -53,7 +53,10 @@
                     <div id="video-progress-text" class="progress-text">0%</div>
                 </div>
                 <div id="video-result" class="text-center text-lg text-gray-700 mt-4"></div>
-                <div id="video-player" class="mt-4 hidden relative">
+                <div id="video-player" class="mt-4 hidden">
+                    <select id="video-select" class="mb-2 p-2 border rounded w-full max-w-md">
+                        <option value="">Select a Video</option>
+                    </select>
                     <div class="relative">
                         <video id="video-element" controls class="w-full max-w-md mx-auto"></video>
                         <canvas id="highlight-canvas" class="absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
