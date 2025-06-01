@@ -136,7 +136,11 @@ def process_video(file):
             if cap.get(cv2.CAP_PROP_POS_FRAMES) % frame_interval == 0:
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 current_frame = int(cap.get(cv2.CAP_PROP_POS_FRAMES) / frame_interval)
-                result = process_image(frame_rgb, f"{file.filename}_frame_{current_frame}")
+                frame_filename = f"{file.filename}_frame_{current_frame}"
+                # Save the frame as an image for thumbnail display
+                frame_path = os.path.join(TEMP_FOLDER, f"{frame_filename}.jpg")
+                cv2.imwrite(frame_path, cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR))
+                result = process_image(frame_rgb, frame_filename)
                 frame_results.append(result)
                 frame_count += 1
 
@@ -180,6 +184,15 @@ def serve_uploaded_file(filename):
     else:
         app.logger.error(f"File not found: {file_path}")
         return jsonify({'error': 'File not found'}), 404
+
+@app.route('/TempFrames/<filename>')
+def serve_temp_frame(filename):
+    file_path = os.path.join(TEMP_FOLDER, filename)
+    if os.path.exists(file_path):
+        return send_from_directory(TEMP_FOLDER, filename)
+    else:
+        app.logger.error(f"Frame not found: {file_path}")
+        return jsonify({'error': 'Frame not found'}), 404
 
 @app.route('/progress')
 def progress():
@@ -254,6 +267,14 @@ def clear_results():
     try:
         with open('image_confidences.json', 'w') as f:
             json.dump(image_confidences, f, indent=4)
+        # Clear TempFrames directory
+        for file in os.listdir(TEMP_FOLDER):
+            file_path = os.path.join(TEMP_FOLDER, file)
+            try:
+                if os.path.isfile(file_path):
+                    os.unlink(file_path)
+            except Exception as e:
+                app.logger.error(f"Error deleting frame file {file_path}: {str(e)}")
         return jsonify({'message': 'Results cleared successfully'})
     except Exception as e:
         app.logger.error(f"Error clearing results: {str(e)}")

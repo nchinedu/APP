@@ -16,8 +16,8 @@
         .section-container { margin-bottom: 2rem; }
         .section-title { font-size: 1.5rem; font-weight: bold; color: #1f2937; margin-bottom: 1rem; }
         .file-item { text-align: center; }
-        .file-item video { cursor: pointer; transition: opacity 0.3s; }
-        .file-item video:hover { opacity: 0.9; }
+        .file-item video, .file-item img { cursor: pointer; transition: opacity 0.3s; }
+        .file-item video:hover, .file-item img:hover { opacity: 0.9; }
         .progress-container { width: 100%; background-color: #e5e7eb; border-radius: 9999px; overflow: hidden; margin: 1rem 0; }
         .progress-bar { height: 1rem; background-color: #3b82f6; width: 0%; transition: width 0.3s ease-in-out; }
         .progress-text { text-align: center; font-size: 0.875rem; color: #1f2937; margin-top: 0.5rem; }
@@ -68,11 +68,11 @@
                     <button id="video-clear" class="bg-red-600 text-white py-2 px-6 rounded-lg hover:bg-red-700 transition font-medium">Clear Results</button>
                 </div>
                 <div id="video-real-section" class="section-container hidden">
-                    <h2 class="section-title">Real</h2>
+                    <h2 class="section-title">Real Frames</h2>
                     <div id="video-real-files" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
                 </div>
                 <div id="video-fake-section" class="section-container hidden">
-                    <h2 class="section-title">Fake</h2>
+                    <h2 class="section-title">Fake Frames</h2>
                     <div id="video-fake-files" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
                 </div>
                 <div id="video-no-face-section" class="section-container hidden">

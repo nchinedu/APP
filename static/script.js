@@ -153,7 +153,9 @@ document.addEventListener('DOMContentLoaded', () => {
         modalInfo.innerHTML = result ? (
             result.no_face 
                 ? `No face detected in ${filename}`
-                : `Class: ${result.class}<br>Confidence: ${(result.confidence * 100).toFixed(2)}%<br>Face Detected: ${result.face_detected ? 'Yes' : 'No'}`
+                : result.frame_results 
+                    ? `Processed ${result.frame_results.length} frames.<br>Click frames below for details.`
+                    : `Class: ${result.class}<br>Confidence: ${(result.confidence * 100).toFixed(2)}%<br>Face Detected: ${result.face_detected ? 'Yes' : 'No'}`
         ) : 'No results available';
         modal.style.display = 'flex';
     }
@@ -249,52 +251,94 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (Object.keys(data).length === 0) return;
 
-            for (const [filename, result] of Object.entries(data)) {
-                const ext = filename.split('.').pop().toLowerCase();
+            for (const [videoFilename, result] of Object.entries(data)) {
+                const ext = videoFilename.split('.').pop().toLowerCase();
                 const isImage = ['jpg', 'jpeg', 'png'].includes(ext);
                 const isVideo = ['mp4', 'avi', 'mov'].includes(ext);
+
                 if (pagePath === '/image' && !isImage) continue;
                 if (pagePath === '/video' && !isVideo) continue;
 
-                const container = document.createElement('div');
-                container.className = 'file-item fade-in';
-                let element;
+                // Handle image results
                 if (isImage) {
-                    element = document.createElement('img');
-                } else {
-                    element = document.createElement('video');
-                    element.muted = true;
-                    element.controls = true;
-                }
-                element.src = `/uploads/${filename}`;
-                element.alt = filename;
-                element.title = filename;
-                element.className = 'w-full h-32 object-cover rounded-lg';
-                element.dataset.filename = filename;
-                element.onerror = () => {
-                    console.error(`Failed to load media: /uploads/${filename}`);
-                    element.src = '';
-                };
-                element.addEventListener('click', () => showModal(filename));
-                container.appendChild(element);
+                    const container = document.createElement('div');
+                    container.className = 'file-item fade-in';
+                    const element = document.createElement('img');
+                    element.src = `/uploads/${videoFilename}`;
+                    element.alt = videoFilename;
+                    element.title = videoFilename;
+                    element.className = 'w-full h-32 object-cover rounded-lg';
+                    element.dataset.filename = videoFilename;
+                    element.onerror = () => {
+                        console.error(`Failed to load media: /uploads/${videoFilename}`);
+                        element.src = '';
+                    };
+                    element.addEventListener('click', () => showModal(videoFilename));
+                    container.appendChild(element);
 
-                const infoDiv = document.createElement('div');
-                infoDiv.className = 'text-sm text-gray-600 mt-2';
-                infoDiv.innerHTML = `<span class="truncate">${filename}</span>`;
-                if (!result.no_face) {
-                    infoDiv.innerHTML += `<br>Confidence: ${(result.confidence * 100).toFixed(2)}%`;
-                }
-                container.appendChild(infoDiv);
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'text-sm text-gray-600 mt-2';
+                    infoDiv.innerHTML = `<span class="truncate">${videoFilename}</span>`;
+                    if (!result.no_face) {
+                        infoDiv.innerHTML += `<br>Confidence: ${(result.confidence * 100).toFixed(2)}%`;
+                    }
+                    container.appendChild(infoDiv);
 
-                if (result.no_face) {
-                    noFaceSection.classList.remove('hidden');
-                    noFaceFiles.appendChild(container);
-                } else if (result.class === 'real') {
-                    realSection.classList.remove('hidden');
-                    realFiles.appendChild(container);
-                } else {
-                    fakeSection.classList.remove('hidden');
-                    fakeFiles.appendChild(container);
+                    if (result.no_face) {
+                        noFaceSection.classList.remove('hidden');
+                        noFaceFiles.appendChild(container);
+                    } else if (result.class === 'real') {
+                        realSection.classList.remove('hidden');
+                        realFiles.appendChild(container);
+                    } else {
+                        fakeSection.classList.remove('hidden');
+                        fakeFiles.appendChild(container);
+                    }
+                }
+
+                // Handle video frame results
+                if (isVideo && result.frame_results) {
+                    result.frame_results.forEach(frame => {
+                        const frameFilename = frame.filename;
+                        const container = document.createElement('div');
+                        container.className = 'file-item fade-in';
+                        const element = document.createElement('img');
+                        // Use the frame image if available, or fallback to video thumbnail
+                        element.src = `/TempFrames/${frameFilename}.jpg`; // Assuming frames are saved as images
+                        element.alt = frameFilename;
+                        element.title = frameFilename;
+                        element.className = 'w-full h-32 object-cover rounded-lg';
+                        element.dataset.filename = frameFilename;
+                        element.onerror = () => {
+                            console.error(`Failed to load frame: /TempFrames/${frameFilename}.jpg`);
+                            element.src = '';
+                        };
+                        element.addEventListener('click', () => {
+                            // On click, jump to the frame in the video player
+                            const frameNum = parseInt(frameFilename.split('_frame_')[1]);
+                            videoElement.currentTime = frameNum * frameInterval;
+                        });
+                        container.appendChild(element);
+
+                        const infoDiv = document.createElement('div');
+                        infoDiv.className = 'text-sm text-gray-600 mt-2';
+                        infoDiv.innerHTML = `<span class="truncate">Frame ${frameFilename.split('_frame_')[1]}</span>`;
+                        if (!frame.no_face) {
+                            infoDiv.innerHTML += `<br>Confidence: ${(frame.confidence * 100).toFixed(2)}%`;
+                        }
+                        container.appendChild(infoDiv);
+
+                        if (frame.no_face) {
+                            noFaceSection.classList.remove('hidden');
+                            noFaceFiles.appendChild(container);
+                        } else if (frame.class === 'real') {
+                            realSection.classList.remove('hidden');
+                            realFiles.appendChild(container);
+                        } else {
+                            fakeSection.classList.remove('hidden');
+                            fakeFiles.appendChild(container);
+                        }
+                    });
                 }
             }
         } catch (error) {
@@ -401,6 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
             videoElement.currentTime = newTime;
             updateFrameInfo(Math.floor(newTime * frameInterval));
         });
+
         nextFrame.addEventListener('click', () => {
             const currentTime = videoElement.currentTime;
             videoElement.currentTime = currentTime + frameInterval;
