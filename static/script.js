@@ -1,12 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
     const pagePath = window.location.pathname;
-    let uploadArea, input, browseBtn, preview, progress, progressBar, progressText, resultDiv, clearButton, realSection, fakeSection, noFaceSection, realFiles, fakeFiles, noFaceFiles, modal, modalImage, modalVideo, modalInfo, closeModal, videoPlayer, videoElement, prevFrame, nextFrame;
+    let uploadArea, input, browseBtn, startProcessingBtn, preview, progress, progressBar, progressText, resultDiv, clearButton, realSection, fakeSection, noFaceSection, realFiles, fakeFiles, noFaceFiles, modal, modalImage, modalVideo, modalInfo, closeModal, videoPlayer, videoElement, prevFrame, nextFrame;
 
     // Initialize page-specific elements
     if (pagePath === '/image') {
         uploadArea = document.getElementById('image-upload-area');
         input = document.getElementById('image-input');
         browseBtn = document.getElementById('image-browse');
+        startProcessingBtn = document.getElementById('image-start-processing');
         preview = document.getElementById('image-preview');
         progress = document.getElementById('image-progress');
         progressBar = document.getElementById('image-progress-bar');
@@ -27,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadArea = document.getElementById('video-upload-area');
         input = document.getElementById('video-input');
         browseBtn = document.getElementById('video-browse');
+        startProcessingBtn = document.getElementById('video-start-processing');
         preview = document.getElementById('video-preview');
         progress = document.getElementById('video-progress');
         progressBar = document.getElementById('video-progress-bar');
@@ -69,6 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleFilePreview(files) {
         preview.innerHTML = '';
         preview.classList.add('hidden');
+        startProcessingBtn.disabled = true;
         if (files.length > 0) {
             let validFiles = true;
             Array.from(files).forEach(file => {
@@ -81,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (!validFiles) return;
             preview.classList.remove('hidden');
+            startProcessingBtn.disabled = false;
             Array.from(files).forEach(file => {
                 const container = document.createElement('div');
                 container.className = 'file-item';
@@ -161,9 +165,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Handle upload
-    uploadArea.addEventListener('click', async (e) => {
-        if (e.target.id === 'image-browse' || e.target.id === 'video-browse') return;
+    // Handle processing start
+    startProcessingBtn.addEventListener('click', async () => {
         const files = input.files;
         if (files.length === 0) {
             resultDiv.innerHTML = `<span class="text-red-600 fade-in">No files selected</span>`;
