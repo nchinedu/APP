@@ -62,20 +62,20 @@ def detect_and_crop_face(img_array):
             padding = int(max(w, h) * 0.2)
             x = max(0, x - padding)
             y = max(0, y - padding)
-            w = min(img_array.shape[1], w + 2 * padding)
-            h = min(img_array.shape[0], h + 2 * padding)
+            w = min(img_array.shape[1] - x, w + 2 * padding)
+            h = min(img_array.shape[0] - y, h + 2 * padding)
             face_img = img_array[y:y+h, x:x+w]
             face_img = cv2.resize(face_img, (299, 299))
-            return face_img, True
+            return face_img, True, {'x': int(x), 'y': int(y), 'width': int(w), 'height': int(h)}
         else:
-            return cv2.resize(img_array, (299, 299)), False
+            return cv2.resize(img_array, (299, 299)), False, None
     except Exception as e:
         app.logger.error(f"Error in detect_and_crop_face: {str(e)}")
         raise
 
 def process_image(img_array, filename):
     try:
-        processed_img, face_detected = detect_and_crop_face(img_array)
+        processed_img, face_detected, face_box = detect_and_crop_face(img_array)
         
         if not face_detected:
             return {
@@ -104,6 +104,7 @@ def process_image(img_array, filename):
             'class': predicted_class,
             'confidence': float(confidence),
             'face_detected': face_detected,
+            'face_box': face_box,
             'no_face': False
         }
     except Exception as e:
@@ -134,7 +135,8 @@ def process_video(file):
 
             if cap.get(cv2.CAP_PROP_POS_FRAMES) % frame_interval == 0:
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                result = process_image(frame_rgb, file.filename)
+                current_frame = int(cap.get(cv2.CAP_PROP_POS_FRAMES) / frame_interval)
+                result = process_image(frame_rgb, f"{file.filename}_frame_{current_frame}")
                 frame_results.append(result)
                 frame_count += 1
 
@@ -146,26 +148,9 @@ def process_video(file):
                 'no_face': True
             }
 
-        valid_results = [r for r in frame_results if not r.get('no_face', False)]
-        if not valid_results:
-            return {
-                'filename': file.filename,
-                'no_face': True
-            }
-
-        fake_count = sum(1 for r in valid_results if r['class'] == 'fake')
-        face_detected_count = sum(1 for r in frame_results if r.get('face_detected', False))
-        total_frames = len(valid_results)
-        predicted_class = 'fake' if fake_count / total_frames >= 0.5 else 'real'
-        avg_confidence = sum(r['confidence'] for r in valid_results if r['class'] == predicted_class) / total_frames
-        face_detected = face_detected_count > 0
-
         return {
             'filename': file.filename,
-            'class': predicted_class,
-            'confidence': avg_confidence,
-            'face_detected': face_detected,
-            'no_face': False
+            'frame_results': frame_results
         }
 
     except Exception as e:
@@ -201,7 +186,6 @@ def progress():
     def generate():
         while True:
             yield f"data: {json.dumps(progress_data)}\n\n"
-            # Sleep briefly to avoid overwhelming the client
             import time
             time.sleep(0.1)
     return Response(generate(), mimetype='text/event-stream')

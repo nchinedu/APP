@@ -21,6 +21,7 @@
         .progress-container { width: 100%; background-color: #e5e7eb; border-radius: 9999px; overflow: hidden; margin: 1rem 0; }
         .progress-bar { height: 1rem; background-color: #3b82f6; width: 0%; transition: width 0.3s ease-in-out; }
         .progress-text { text-align: center; font-size: 0.875rem; color: #1f2937; margin-top: 0.5rem; }
+        .frame-info { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); background-color: rgba(0, 0, 0, 0.8); color: white; padding: 1rem; border-radius: 8px; font-size: 1rem; display: none; z-index: 10; }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col">
@@ -52,11 +53,12 @@
                     <div id="video-progress-text" class="progress-text">0%</div>
                 </div>
                 <div id="video-result" class="text-center text-lg text-gray-700 mt-4"></div>
-                <div id="video-player" class="mt-4 hidden">
+                <div id="video-player" class="mt-4 hidden relative">
                     <div class="relative">
                         <video id="video-element" controls class="w-full max-w-md mx-auto"></video>
                         <canvas id="highlight-canvas" class="absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
                     </div>
+                    <div id="frame-info" class="frame-info"></div>
                     <div class="mt-2">
                         <button id="prev-frame" class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">Prev Frame</button>
                         <button id="next-frame" class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300 ml-2">Next Frame</button>

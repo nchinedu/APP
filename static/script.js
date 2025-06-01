@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const pagePath = window.location.pathname;
-    let uploadArea, input, browseBtn, startProcessingBtn, preview, progress, progressBar, progressText, resultDiv, clearButton, realSection, fakeSection, noFaceSection, realFiles, fakeFiles, noFaceFiles, modal, modalImage, modalVideo, modalInfo, closeModal, videoPlayer, videoElement, prevFrame, nextFrame, highlightCanvas;
+    let uploadArea, input, browseBtn, startProcessingBtn, preview, progress, progressBar, progressText, resultDiv, clearButton, realSection, fakeSection, noFaceSection, realFiles, fakeFiles, noFaceFiles, modal, modalImage, modalVideo, modalInfo, closeModal, videoPlayer, videoElement, prevFrame, nextFrame, highlightCanvas, frameInfo;
 
     // Initialize page-specific elements
     if (pagePath === '/image') {
@@ -50,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
         prevFrame = document.getElementById('prev-frame');
         nextFrame = document.getElementById('next-frame');
         highlightCanvas = document.getElementById('highlight-canvas');
+        frameInfo = document.getElementById('frame-info');
         const highlightCtx = highlightCanvas.getContext('2d');
     } else {
         return; // Homepage doesn't need JavaScript
@@ -323,6 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     videoElement.src = '';
                     highlightCanvas.width = 0;
                     highlightCanvas.height = 0;
+                    frameInfo.style.display = 'none';
                 }
             } else {
                 resultDiv.innerHTML = `<span class="text-red-600 fade-in">Error: ${data.error}</span>`;
@@ -340,9 +342,27 @@ document.addEventListener('DOMContentLoaded', () => {
         function drawHighlight(faceBox, isFake) {
             highlightCtx.clearRect(0, 0, highlightCanvas.width, highlightCanvas.height);
             if (faceBox) {
+                const scaleX = highlightCanvas.width / videoElement.videoWidth;
+                const scaleY = highlightCanvas.height / videoElement.videoHeight;
                 highlightCtx.strokeStyle = isFake ? 'red' : 'green';
                 highlightCtx.lineWidth = 4;
-                highlightCtx.strokeRect(faceBox.x, faceBox.y, faceBox.width, faceBox.height);
+                highlightCtx.strokeRect(
+                    faceBox.x * scaleX,
+                    faceBox.y * scaleY,
+                    faceBox.width * scaleX,
+                    faceBox.height * scaleY
+                );
+            }
+        }
+
+        function updateFrameInfo(frameNumber) {
+            const frameResult = frameResults[frameNumber];
+            if (frameResult && frameResult.face_detected) {
+                const message = `This frame is ${frameResult.class} with ${(frameResult.confidence * 100).toFixed(2)}% confidence`;
+                frameInfo.textContent = message;
+                frameInfo.style.display = 'block';
+            } else {
+                frameInfo.style.display = 'none';
             }
         }
 
@@ -351,7 +371,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const filename = Object.keys(results)[0]; // Assuming single video for now
             if (results[filename] && results[filename].frame_results) {
                 frameResults = results[filename].frame_results.reduce((acc, frame) => {
-                    acc[frame.filename.split('_frame_')[1]] = frame;
+                    const frameNum = parseInt(frame.filename.split('_frame_')[1]);
+                    acc[frameNum] = frame;
                     return acc;
                 }, {});
             }
@@ -366,22 +387,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentFrame = Math.floor(videoElement.currentTime * frameInterval);
             const frameResult = frameResults[currentFrame];
             if (frameResult && frameResult.face_detected) {
-                // Placeholder: Assume face detection returns a bounding box (x, y, width, height)
-                // This would need backend integration to return face coordinates
-                const faceBox = { x: 50, y: 50, width: 100, height: 100 }; // Example coordinates
-                drawHighlight(faceBox, frameResult.class === 'fake');
+                drawHighlight(frameResult.face_box, frameResult.class === 'fake');
+                updateFrameInfo(currentFrame);
             } else {
                 drawHighlight(null);
+                frameInfo.style.display = 'none';
             }
         });
 
         prevFrame.addEventListener('click', () => {
             const currentTime = videoElement.currentTime;
-            videoElement.currentTime = Math.max(0, currentTime - frameInterval);
+            const newTime = Math.max(0, currentTime - frameInterval);
+            videoElement.currentTime = newTime;
+            updateFrameInfo(Math.floor(newTime * frameInterval));
         });
         nextFrame.addEventListener('click', () => {
             const currentTime = videoElement.currentTime;
             videoElement.currentTime = currentTime + frameInterval;
+            updateFrameInfo(Math.floor((currentTime + frameInterval) * frameInterval));
         });
     }
 
