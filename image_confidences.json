@@ -1,13 +1,9 @@
 {
-    "gettyimages-1242119374-612x612.jpg": {
-        "filename": "gettyimages-1242119374-612x612.jpg",
-        "class": "real",
-        "confidence": 0.9958940148353577,
+    "02_01__secret_conversation__YVGY8LOK.mp4": {
+        "filename": "02_01__secret_conversation__YVGY8LOK.mp4",
+        "class": "fake",
+        "confidence": 0.4933489365503192,
         "face_detected": true,
         "no_face": false
-    },
-    "2nd_Training and Validation Accuracy.png": {
-        "filename": "2nd_Training and Validation Accuracy.png",
-        "no_face": true
     }
 }
