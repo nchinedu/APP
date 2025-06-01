@@ -1,4 +1,4 @@
 uploads/
 TempFrames/
 xceptionnet_optimized.tflite
-image_confidence.json
+image_confidences.json
