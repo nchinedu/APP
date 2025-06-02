@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Validate file formats
     function validateFile(file) {
         const validImageExts = ['.jpg', '.jpeg', '.png'];
-        const validVideoExts = ['.mp4', '.avi', '.mov'];
+        const validVideoExts = ['.mp4', '.avi', '.mov', '.mkv']; // Added .mkv support
         const ext = file.name.split('.').pop().toLowerCase();
         if (pagePath === '/image') {
             return validImageExts.includes('.' + ext);
@@ -181,6 +181,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Close modal
+    closeModal.addEventListener('click', () => {
+        modal.style.display = 'none';
+        if (pagePath === '/image') {
+            modalImage.src = '';
+        } else {
+            modalVideo.src = '';
+        }
+    });
+
     // Handle processing start
     startProcessingBtn.addEventListener('click', async () => {
         const files = input.files;
@@ -258,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
             for (const [videoFilename, result] of Object.entries(data)) {
                 const ext = videoFilename.split('.').pop().toLowerCase();
                 const isImage = ['jpg', 'jpeg', 'png'].includes(ext);
-                const isVideo = ['mp4', 'avi', 'mov'].includes(ext);
+                const isVideo = ['mp4', 'avi', 'mov', 'mkv'].includes(ext);
 
                 if (pagePath === '/image' && !isImage) continue;
                 if (pagePath === '/video' && !isVideo) continue;
@@ -314,24 +324,18 @@ document.addEventListener('DOMContentLoaded', () => {
             resultDiv.innerHTML = `<span class="text-red-600 fade-in">Error: Failed to fetch results</span>`;
         }
     }
-    async function loadVideoAndFrames() {
-        const selectedVideo = videoSelect.value;
-        if (!selectedVideo || !fileBlobs[selectedVideo]) {
-            videoElement.src = '';
-            frameInfo.style.display = 'none';
-            return;
+
+    // Helper function to seek to a specific frame
+    function seekToFrame(frameNum) {
+        const targetTime = frameNum * frameInterval;
+        if (videoElement.readyState >= 2) { // Check if metadata is loaded
+            videoElement.currentTime = targetTime;
+        } else {
+            console.error(`Video not ready to seek to ${targetTime} seconds. Current readyState: ${videoElement.readyState}`);
+            videoElement.addEventListener('loadedmetadata', () => {
+                videoElement.currentTime = targetTime;
+            }, { once: true });
         }
-        videoElement.src = URL.createObjectURL(fileBlobs[selectedVideo]);
-        const results = await fetchResults();
-        if (results[selectedVideo] && results[selectedVideo].frame_results) {
-            frameResults = results[selectedVideo].frame_results.reduce((acc, frame) => {
-                const frameNum = parseInt(frame.filename.split('_frame_')[1]);
-                acc[frameNum] = frame;
-                return acc;
-            }, {});
-        }
-        videoElement.load();
-        filterFramesByVideo(); // Update frames when video changes
     }
 
     // Filter frames based on selected video with color-coded confidence
@@ -376,7 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     videoSelect.value = selectedVideo;
                     loadVideoAndFrames();
                     const frameNum = parseInt(frameFilename.split('_frame_')[1]);
-                    videoElement.currentTime = frameNum * frameInterval; // Navigate to frame timestamp
+                    seekToFrame(frameNum); // Use helper function to seek
                     showFrameModal(frameFilename, selectedVideo); // Show enhanced modal
                 });
                 container.appendChild(element);
@@ -469,6 +473,25 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        async function loadVideoAndFrames() {
+            const selectedVideo = videoSelect.value;
+            if (!selectedVideo || !fileBlobs[selectedVideo]) {
+                videoElement.src = '';
+                frameInfo.style.display = 'none';
+                return;
+            }
+            videoElement.src = URL.createObjectURL(fileBlobs[selectedVideo]);
+            const results = await fetchResults();
+            if (results[selectedVideo] && results[selectedVideo].frame_results) {
+                frameResults = results[selectedVideo].frame_results.reduce((acc, frame) => {
+                    const frameNum = parseInt(frame.filename.split('_frame_')[1]);
+                    acc[frameNum] = frame;
+                    return acc;
+                }, {});
+            }
+            videoElement.load();
+            filterFramesByVideo(); // Update frames when video changes
+        }
 
         videoElement.addEventListener('loadedmetadata', () => {
             highlightCanvas.width = videoElement.videoWidth;
