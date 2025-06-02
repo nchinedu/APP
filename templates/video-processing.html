@@ -32,7 +32,7 @@
         <nav class="space-x-4">
             <a href="/" class="text-gray-600 hover:text-gray-900 font-medium">Home</a>
             <a href="/image" class="text-gray-600 hover:text-gray-900 font-medium">Image</a>
-            <a href="/video" class="text-gray-900 font-medium">Video</a>
+            <!-- <a href="/video" class="text-gray-900 font-medium">Video</a> -->
         </nav>
         <div><span class="cursor-pointer text-xl">👤</span></div>
     </header>
@@ -41,8 +41,8 @@
             <h1 class="text-3xl font-bold mb-4 text-gray-800">Upload a Video</h1>
             <div id="video-upload-area" class="border-2 border-dashed border-gray-300 p-10 rounded-lg">
                 <p class="mb-2 text-gray-700">Drag and drop or click to upload</p>
-                <p class="text-gray-500">Upload videos to start processing. We support MP4, AVI, MOV formats.</p>
-                <input type="file" id="video-input" multiple accept="video/mp4,video/avi,video/mov" class="hidden">
+                <p class="text-gray-500">Upload videos to start processing. We support MP4, AVI, MOV, MKV formats.</p>
+                <input type="file" id="video-input" multiple accept="video/mp4,video/avi,video/mov,video/mkv" class="hidden">
                 <button id="video-browse" class="mt-4 bg-gray-200 px-4 py-2 rounded hover:bg-gray-300 transition">Select Videos</button>
                 <button id="video-start-processing" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition font-medium disabled:bg-blue-300" disabled>Start Processing</button>
                 <div id="video-preview" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4 hidden"></div>
@@ -63,8 +63,8 @@
                     </div>
                     <div id="frame-info" class="frame-info"></div>
                     <div class="mt-2">
-                        <button id="prev-frame" class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">Prev Frame</button>
-                        <button id="next-frame" class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300 ml-2">Next Frame</button>
+                        <!-- <button id="prev-frame" class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">Prev Frame</button>
+                        <button id="next-frame" class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300 ml-2">Next Frame</button> -->
                     </div>
                 </div>
                 <div class="flex justify-end mt-4">
@@ -79,8 +79,8 @@
                     <div id="video-fake-files" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
                 </div>
                 <div id="video-no-face-section" class="section-container hidden">
-                    <h2 class="section-title">No Face Detected</h2>
-                    <div id="video-no-face-files" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+                    <!-- <h2 class="section-title">No Face Detected</h2>
+                    <div id="video-no-face-files" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div> -->
                 </div>
             </div>
         </section>

@@ -43,7 +43,7 @@ LABEL_MAPPING = 'real_high'
 FRAME_RATE = 1
 MAX_FRAMES = 30
 ALLOWED_IMAGE_EXTS = {'.jpg', '.jpeg', '.png'}
-ALLOWED_VIDEO_EXTS = {'.mp4', '.avi', '.mov'}
+ALLOWED_VIDEO_EXTS = {'.mp4', '.avi', '.mov', '.mkv'}
 
 # Load Haar Cascade for face detection
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')

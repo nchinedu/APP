@@ -1,538 +1,255 @@
 {
-    "02_01__secret_conversation__YVGY8LOK.mp4": {
-        "filename": "02_01__secret_conversation__YVGY8LOK.mp4",
+    "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv": {
+        "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv",
         "frame_results": [
             {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_1",
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_1",
+                "class": "real",
+                "confidence": 0.9506232738494873,
+                "face_detected": true,
+                "face_box": {
+                    "x": 334,
+                    "y": 31,
+                    "width": 542,
+                    "height": 542
+                },
+                "no_face": false
+            },
+            {
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_2",
+                "class": "real",
+                "confidence": 0.9830955266952515,
+                "face_detected": true,
+                "face_box": {
+                    "x": 343,
+                    "y": 44,
+                    "width": 514,
+                    "height": 514
+                },
+                "no_face": false
+            },
+            {
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_3",
+                "class": "real",
+                "confidence": 0.9550921320915222,
+                "face_detected": true,
+                "face_box": {
+                    "x": 341,
+                    "y": 37,
+                    "width": 529,
+                    "height": 529
+                },
+                "no_face": false
+            },
+            {
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_4",
                 "no_face": true
             },
             {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_2",
-                "class": "fake",
-                "confidence": 0.9829123374074697,
-                "face_detected": true,
-                "face_box": {
-                    "x": 1105,
-                    "y": 185,
-                    "width": 203,
-                    "height": 203
-                },
-                "no_face": false
-            },
-            {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_3",
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_5",
                 "no_face": true
             },
             {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_4",
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_6",
                 "no_face": true
             },
             {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_5",
-                "class": "fake",
-                "confidence": 0.9855579435825348,
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_7",
+                "class": "real",
+                "confidence": 0.9291143417358398,
                 "face_detected": true,
                 "face_box": {
-                    "x": 1092,
-                    "y": 186,
-                    "width": 220,
-                    "height": 220
+                    "x": 268,
+                    "y": 387,
+                    "width": 140,
+                    "height": 140
                 },
                 "no_face": false
             },
             {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_6",
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_8",
                 "no_face": true
             },
             {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_7",
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_9",
+                "class": "real",
+                "confidence": 0.9879102110862732,
+                "face_detected": true,
+                "face_box": {
+                    "x": 301,
+                    "y": 153,
+                    "width": 46,
+                    "height": 46
+                },
+                "no_face": false
+            },
+            {
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_10",
+                "class": "real",
+                "confidence": 0.678613543510437,
+                "face_detected": true,
+                "face_box": {
+                    "x": 23,
+                    "y": 557,
+                    "width": 93,
+                    "height": 83
+                },
+                "no_face": false
+            },
+            {
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_11",
+                "class": "real",
+                "confidence": 0.9224523901939392,
+                "face_detected": true,
+                "face_box": {
+                    "x": 512,
+                    "y": 102,
+                    "width": 81,
+                    "height": 81
+                },
+                "no_face": false
+            },
+            {
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_12",
                 "no_face": true
             },
             {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_8",
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_13",
                 "no_face": true
             },
             {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_9",
-                "class": "fake",
-                "confidence": 0.9916233383119106,
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_14",
+                "class": "real",
+                "confidence": 0.9498897790908813,
                 "face_detected": true,
                 "face_box": {
-                    "x": 1108,
-                    "y": 161,
-                    "width": 241,
-                    "height": 241
+                    "x": 1033,
+                    "y": 198,
+                    "width": 148,
+                    "height": 148
                 },
                 "no_face": false
             },
             {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_10",
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_15",
+                "class": "real",
+                "confidence": 0.7729529738426208,
+                "face_detected": true,
+                "face_box": {
+                    "x": 533,
+                    "y": 63,
+                    "width": 74,
+                    "height": 74
+                },
+                "no_face": false
+            },
+            {
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_16",
+                "class": "real",
+                "confidence": 0.8121964335441589,
+                "face_detected": true,
+                "face_box": {
+                    "x": 845,
+                    "y": 155,
+                    "width": 63,
+                    "height": 63
+                },
+                "no_face": false
+            },
+            {
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_17",
+                "class": "real",
+                "confidence": 0.9472037553787231,
+                "face_detected": true,
+                "face_box": {
+                    "x": 869,
+                    "y": 144,
+                    "width": 77,
+                    "height": 77
+                },
+                "no_face": false
+            },
+            {
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_18",
+                "class": "real",
+                "confidence": 0.7911824584007263,
+                "face_detected": true,
+                "face_box": {
+                    "x": 514,
+                    "y": 199,
+                    "width": 140,
+                    "height": 140
+                },
+                "no_face": false
+            },
+            {
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_19",
+                "class": "real",
+                "confidence": 0.8751479387283325,
+                "face_detected": true,
+                "face_box": {
+                    "x": 594,
+                    "y": 171,
+                    "width": 127,
+                    "height": 127
+                },
+                "no_face": false
+            },
+            {
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_20",
+                "class": "real",
+                "confidence": 0.7828846573829651,
+                "face_detected": true,
+                "face_box": {
+                    "x": 499,
+                    "y": 36,
+                    "width": 185,
+                    "height": 185
+                },
+                "no_face": false
+            },
+            {
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_21",
+                "class": "real",
+                "confidence": 0.8634493947029114,
+                "face_detected": true,
+                "face_box": {
+                    "x": 921,
+                    "y": 387,
+                    "width": 137,
+                    "height": 137
+                },
+                "no_face": false
+            },
+            {
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_22",
+                "class": "real",
+                "confidence": 0.9674392342567444,
+                "face_detected": true,
+                "face_box": {
+                    "x": 536,
+                    "y": 47,
+                    "width": 189,
+                    "height": 189
+                },
+                "no_face": false
+            },
+            {
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_23",
+                "class": "real",
+                "confidence": 0.9652730226516724,
+                "face_detected": true,
+                "face_box": {
+                    "x": 473,
+                    "y": 50,
+                    "width": 204,
+                    "height": 204
+                },
+                "no_face": false
+            },
+            {
+                "filename": "Ted.Lasso.S03E01.720p.ATVP.WEBRip.x264-GalaxyTV - Trim.mkv_frame_24",
                 "no_face": true
-            },
-            {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_11",
-                "class": "real",
-                "confidence": 0.7827576398849487,
-                "face_detected": true,
-                "face_box": {
-                    "x": 600,
-                    "y": 0,
-                    "width": 169,
-                    "height": 169
-                },
-                "no_face": false
-            },
-            {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_12",
-                "no_face": true
-            },
-            {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_13",
-                "class": "real",
-                "confidence": 0.8941025137901306,
-                "face_detected": true,
-                "face_box": {
-                    "x": 612,
-                    "y": 15,
-                    "width": 162,
-                    "height": 162
-                },
-                "no_face": false
-            },
-            {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_14",
-                "no_face": true
-            },
-            {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_15",
-                "no_face": true
-            },
-            {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_16",
-                "no_face": true
-            },
-            {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_17",
-                "no_face": true
-            },
-            {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_18",
-                "no_face": true
-            },
-            {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_19",
-                "no_face": true
-            },
-            {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_20",
-                "class": "real",
-                "confidence": 0.9545093774795532,
-                "face_detected": true,
-                "face_box": {
-                    "x": 1153,
-                    "y": 436,
-                    "width": 330,
-                    "height": 330
-                },
-                "no_face": false
-            },
-            {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_21",
-                "no_face": true
-            },
-            {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_22",
-                "no_face": true
-            },
-            {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_23",
-                "no_face": true
-            },
-            {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_24",
-                "no_face": true
-            },
-            {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_25",
-                "no_face": true
-            },
-            {
-                "filename": "02_01__secret_conversation__YVGY8LOK.mp4_frame_26",
-                "no_face": true
-            }
-        ]
-    },
-    "02_03__walking_down_street_outside_angry__QH3Y0IG0.mp4": {
-        "filename": "02_03__walking_down_street_outside_angry__QH3Y0IG0.mp4",
-        "frame_results": [
-            {
-                "filename": "02_03__walking_down_street_outside_angry__QH3Y0IG0.mp4_frame_1",
-                "class": "real",
-                "confidence": 0.7645816802978516,
-                "face_detected": true,
-                "face_box": {
-                    "x": 1153,
-                    "y": 399,
-                    "width": 287,
-                    "height": 287
-                },
-                "no_face": false
-            },
-            {
-                "filename": "02_03__walking_down_street_outside_angry__QH3Y0IG0.mp4_frame_2",
-                "class": "real",
-                "confidence": 0.7993413805961609,
-                "face_detected": true,
-                "face_box": {
-                    "x": 1160,
-                    "y": 404,
-                    "width": 275,
-                    "height": 275
-                },
-                "no_face": false
-            },
-            {
-                "filename": "02_03__walking_down_street_outside_angry__QH3Y0IG0.mp4_frame_3",
-                "class": "real",
-                "confidence": 0.7738342881202698,
-                "face_detected": true,
-                "face_box": {
-                    "x": 1158,
-                    "y": 404,
-                    "width": 280,
-                    "height": 280
-                },
-                "no_face": false
-            },
-            {
-                "filename": "02_03__walking_down_street_outside_angry__QH3Y0IG0.mp4_frame_4",
-                "class": "real",
-                "confidence": 0.8118513226509094,
-                "face_detected": true,
-                "face_box": {
-                    "x": 1161,
-                    "y": 407,
-                    "width": 274,
-                    "height": 274
-                },
-                "no_face": false
-            },
-            {
-                "filename": "02_03__walking_down_street_outside_angry__QH3Y0IG0.mp4_frame_5",
-                "class": "real",
-                "confidence": 0.8109204769134521,
-                "face_detected": true,
-                "face_box": {
-                    "x": 1162,
-                    "y": 405,
-                    "width": 273,
-                    "height": 273
-                },
-                "no_face": false
-            },
-            {
-                "filename": "02_03__walking_down_street_outside_angry__QH3Y0IG0.mp4_frame_6",
-                "class": "real",
-                "confidence": 0.7898567318916321,
-                "face_detected": true,
-                "face_box": {
-                    "x": 1162,
-                    "y": 405,
-                    "width": 274,
-                    "height": 274
-                },
-                "no_face": false
-            },
-            {
-                "filename": "02_03__walking_down_street_outside_angry__QH3Y0IG0.mp4_frame_7",
-                "class": "real",
-                "confidence": 0.7661526203155518,
-                "face_detected": true,
-                "face_box": {
-                    "x": 1162,
-                    "y": 403,
-                    "width": 277,
-                    "height": 277
-                },
-                "no_face": false
-            },
-            {
-                "filename": "02_03__walking_down_street_outside_angry__QH3Y0IG0.mp4_frame_8",
-                "class": "real",
-                "confidence": 0.7797738909721375,
-                "face_detected": true,
-                "face_box": {
-                    "x": 1166,
-                    "y": 410,
-                    "width": 268,
-                    "height": 268
-                },
-                "no_face": false
-            },
-            {
-                "filename": "02_03__walking_down_street_outside_angry__QH3Y0IG0.mp4_frame_9",
-                "class": "real",
-                "confidence": 0.7642062902450562,
-                "face_detected": true,
-                "face_box": {
-                    "x": 1170,
-                    "y": 410,
-                    "width": 263,
-                    "height": 263
-                },
-                "no_face": false
-            },
-            {
-                "filename": "02_03__walking_down_street_outside_angry__QH3Y0IG0.mp4_frame_10",
-                "class": "real",
-                "confidence": 0.811695396900177,
-                "face_detected": true,
-                "face_box": {
-                    "x": 1162,
-                    "y": 407,
-                    "width": 274,
-                    "height": 274
-                },
-                "no_face": false
-            },
-            {
-                "filename": "02_03__walking_down_street_outside_angry__QH3Y0IG0.mp4_frame_11",
-                "class": "real",
-                "confidence": 0.7876249551773071,
-                "face_detected": true,
-                "face_box": {
-                    "x": 1161,
-                    "y": 406,
-                    "width": 276,
-                    "height": 276
-                },
-                "no_face": false
-            },
-            {
-                "filename": "02_03__walking_down_street_outside_angry__QH3Y0IG0.mp4_frame_12",
-                "class": "real",
-                "confidence": 0.7823021411895752,
-                "face_detected": true,
-                "face_box": {
-                    "x": 1161,
-                    "y": 406,
-                    "width": 276,
-                    "height": 276
-                },
-                "no_face": false
-            },
-            {
-                "filename": "02_03__walking_down_street_outside_angry__QH3Y0IG0.mp4_frame_13",
-                "class": "real",
-                "confidence": 0.8015618324279785,
-                "face_detected": true,
-                "face_box": {
-                    "x": 1161,
-                    "y": 407,
-                    "width": 276,
-                    "height": 276
-                },
-                "no_face": false
-            },
-            {
-                "filename": "02_03__walking_down_street_outside_angry__QH3Y0IG0.mp4_frame_14",
-                "class": "real",
-                "confidence": 0.7899879217147827,
-                "face_detected": true,
-                "face_box": {
-                    "x": 1168,
-                    "y": 410,
-                    "width": 266,
-                    "height": 266
-                },
-                "no_face": false
-            },
-            {
-                "filename": "02_03__walking_down_street_outside_angry__QH3Y0IG0.mp4_frame_15",
-                "class": "real",
-                "confidence": 0.7930997610092163,
-                "face_detected": true,
-                "face_box": {
-                    "x": 1169,
-                    "y": 411,
-                    "width": 262,
-                    "height": 262
-                },
-                "no_face": false
-            },
-            {
-                "filename": "02_03__walking_down_street_outside_angry__QH3Y0IG0.mp4_frame_16",
-                "class": "real",
-                "confidence": 0.7890839576721191,
-                "face_detected": true,
-                "face_box": {
-                    "x": 1166,
-                    "y": 410,
-                    "width": 268,
-                    "height": 268
-                },
-                "no_face": false
-            },
-            {
-                "filename": "02_03__walking_down_street_outside_angry__QH3Y0IG0.mp4_frame_17",
-                "class": "real",
-                "confidence": 0.7627266049385071,
-                "face_detected": true,
-                "face_box": {
-                    "x": 1164,
-                    "y": 406,
-                    "width": 274,
-                    "height": 274
-                },
-                "no_face": false
-            },
-            {
-                "filename": "02_03__walking_down_street_outside_angry__QH3Y0IG0.mp4_frame_18",
-                "class": "real",
-                "confidence": 0.3841845989227295,
-                "face_detected": true,
-                "face_box": {
-                    "x": 989,
-                    "y": 15,
-                    "width": 261,
-                    "height": 261
-                },
-                "no_face": false
-            },
-            {
-                "filename": "02_03__walking_down_street_outside_angry__QH3Y0IG0.mp4_frame_19",
-                "class": "fake",
-                "confidence": 0.8120518326759338,
-                "face_detected": true,
-                "face_box": {
-                    "x": 1653,
-                    "y": 41,
-                    "width": 196,
-                    "height": 196
-                },
-                "no_face": false
-            }
-        ]
-    },
-    "01_27__walking_outside_cafe_disgusted__ZYCZ30C0.mp4": {
-        "filename": "01_27__walking_outside_cafe_disgusted__ZYCZ30C0.mp4",
-        "frame_results": [
-            {
-                "filename": "01_27__walking_outside_cafe_disgusted__ZYCZ30C0.mp4_frame_1",
-                "class": "real",
-                "confidence": 0.35417476296424866,
-                "face_detected": true,
-                "face_box": {
-                    "x": 740,
-                    "y": 178,
-                    "width": 213,
-                    "height": 213
-                },
-                "no_face": false
-            },
-            {
-                "filename": "01_27__walking_outside_cafe_disgusted__ZYCZ30C0.mp4_frame_2",
-                "class": "fake",
-                "confidence": 0.8002782166004181,
-                "face_detected": true,
-                "face_box": {
-                    "x": 809,
-                    "y": 101,
-                    "width": 259,
-                    "height": 259
-                },
-                "no_face": false
-            },
-            {
-                "filename": "01_27__walking_outside_cafe_disgusted__ZYCZ30C0.mp4_frame_3",
-                "class": "fake",
-                "confidence": 0.8290359824895859,
-                "face_detected": true,
-                "face_box": {
-                    "x": 797,
-                    "y": 109,
-                    "width": 267,
-                    "height": 267
-                },
-                "no_face": false
-            },
-            {
-                "filename": "01_27__walking_outside_cafe_disgusted__ZYCZ30C0.mp4_frame_4",
-                "class": "fake",
-                "confidence": 0.9360636621713638,
-                "face_detected": true,
-                "face_box": {
-                    "x": 820,
-                    "y": 91,
-                    "width": 284,
-                    "height": 284
-                },
-                "no_face": false
-            },
-            {
-                "filename": "01_27__walking_outside_cafe_disgusted__ZYCZ30C0.mp4_frame_5",
-                "class": "fake",
-                "confidence": 0.8410048633813858,
-                "face_detected": true,
-                "face_box": {
-                    "x": 844,
-                    "y": 92,
-                    "width": 275,
-                    "height": 275
-                },
-                "no_face": false
-            },
-            {
-                "filename": "01_27__walking_outside_cafe_disgusted__ZYCZ30C0.mp4_frame_6",
-                "class": "fake",
-                "confidence": 0.7820425629615784,
-                "face_detected": true,
-                "face_box": {
-                    "x": 846,
-                    "y": 103,
-                    "width": 276,
-                    "height": 276
-                },
-                "no_face": false
-            },
-            {
-                "filename": "01_27__walking_outside_cafe_disgusted__ZYCZ30C0.mp4_frame_7",
-                "class": "fake",
-                "confidence": 0.8000108301639557,
-                "face_detected": true,
-                "face_box": {
-                    "x": 851,
-                    "y": 97,
-                    "width": 273,
-                    "height": 273
-                },
-                "no_face": false
-            },
-            {
-                "filename": "01_27__walking_outside_cafe_disgusted__ZYCZ30C0.mp4_frame_8",
-                "class": "fake",
-                "confidence": 0.9244893491268158,
-                "face_detected": true,
-                "face_box": {
-                    "x": 850,
-                    "y": 89,
-                    "width": 281,
-                    "height": 281
-                },
-                "no_face": false
-            },
-            {
-                "filename": "01_27__walking_outside_cafe_disgusted__ZYCZ30C0.mp4_frame_9",
-                "class": "real",
-                "confidence": 0.6262003183364868,
-                "face_detected": true,
-                "face_box": {
-                    "x": 1117,
-                    "y": 41,
-                    "width": 331,
-                    "height": 331
-                },
-                "no_face": false
             }
         ]
     }
