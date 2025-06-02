@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const pagePath = window.location.pathname;
     let uploadArea, input, browseBtn, startProcessingBtn, preview, progress, progressBar, progressText, resultDiv, clearButton, realSection, fakeSection, noFaceSection, realFiles, fakeFiles, noFaceFiles, modal, modalImage, modalVideo, modalInfo, closeModal, videoPlayer, videoElement, prevFrame, nextFrame, highlightCanvas, frameInfo, videoSelect;
+    let highlightCtx; // Declare highlightCtx globally within the video context
 
     // Initialize page-specific elements
     if (pagePath === '/image') {
@@ -52,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
         highlightCanvas = document.getElementById('highlight-canvas');
         frameInfo = document.getElementById('frame-info');
         videoSelect = document.getElementById('video-select');
-        const highlightCtx = highlightCanvas.getContext('2d');
+        highlightCtx = highlightCanvas.getContext('2d'); // Initialize highlightCtx here
     } else {
         return; // Homepage doesn't need JavaScript
     }
@@ -161,15 +162,24 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.style.display = 'flex';
     }
 
-    // Close modal
-    closeModal.addEventListener('click', () => {
-        modal.style.display = 'none';
-        if (pagePath === '/image') {
-            modalImage.src = '';
-        } else {
-            modalVideo.src = '';
+    // Enhanced modal for frame details
+    function showFrameModal(frameFilename, videoFilename) {
+        const results = allResults[videoFilename];
+        if (results && results.frame_results) {
+            const frame = results.frame_results.find(f => f.filename === frameFilename);
+            if (frame) {
+                modalVideo.src = `/TempFrames/${frameFilename}.jpg`; // Show the frame image
+                modalInfo.innerHTML = `
+                    Frame: ${frameFilename.split('_frame_')[1]}<br>
+                    Class: ${frame.class || 'N/A'}<br>
+                    Confidence: ${(frame.confidence * 100).toFixed(2)}%<br>
+                    Face Detected: ${frame.face_detected ? 'Yes' : 'No'}<br>
+                    ${frame.face_box ? `Face Box: x=${frame.face_box.x}, y=${frame.face_box.y}, w=${frame.face_box.width}, h=${frame.face_box.height}` : ''}
+                `;
+                modal.style.display = 'flex';
+            }
         }
-    });
+    }
 
     // Handle processing start
     startProcessingBtn.addEventListener('click', async () => {
@@ -304,8 +314,27 @@ document.addEventListener('DOMContentLoaded', () => {
             resultDiv.innerHTML = `<span class="text-red-600 fade-in">Error: Failed to fetch results</span>`;
         }
     }
+    async function loadVideoAndFrames() {
+        const selectedVideo = videoSelect.value;
+        if (!selectedVideo || !fileBlobs[selectedVideo]) {
+            videoElement.src = '';
+            frameInfo.style.display = 'none';
+            return;
+        }
+        videoElement.src = URL.createObjectURL(fileBlobs[selectedVideo]);
+        const results = await fetchResults();
+        if (results[selectedVideo] && results[selectedVideo].frame_results) {
+            frameResults = results[selectedVideo].frame_results.reduce((acc, frame) => {
+                const frameNum = parseInt(frame.filename.split('_frame_')[1]);
+                acc[frameNum] = frame;
+                return acc;
+            }, {});
+        }
+        videoElement.load();
+        filterFramesByVideo(); // Update frames when video changes
+    }
 
-    // Filter frames based on selected video
+    // Filter frames based on selected video with color-coded confidence
     function filterFramesByVideo() {
         const selectedVideo = videoSelect.value;
         realFiles.innerHTML = '';
@@ -330,6 +359,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 element.className = 'w-full h-32 object-cover rounded-lg';
                 element.dataset.filename = frameFilename;
                 element.dataset.video = selectedVideo;
+                // Color-coded confidence
+                const confidence = frame.confidence * 100;
+                if (confidence >= 90) {
+                    element.style.backgroundColor = '#90ee90'; // Light green for high confidence
+                } else if (confidence >= 70) {
+                    element.style.backgroundColor = '#ffff99'; // Light yellow for medium confidence
+                } else {
+                    element.style.backgroundColor = '#ff9999'; // Light red for low confidence
+                }
                 element.onerror = () => {
                     console.error(`Failed to load frame: /TempFrames/${frameFilename}.jpg`);
                     element.src = '';
@@ -338,7 +376,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     videoSelect.value = selectedVideo;
                     loadVideoAndFrames();
                     const frameNum = parseInt(frameFilename.split('_frame_')[1]);
-                    videoElement.currentTime = frameNum * frameInterval;
+                    videoElement.currentTime = frameNum * frameInterval; // Navigate to frame timestamp
+                    showFrameModal(frameFilename, selectedVideo); // Show enhanced modal
                 });
                 container.appendChild(element);
 
@@ -430,25 +469,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        async function loadVideoAndFrames() {
-            const selectedVideo = videoSelect.value;
-            if (!selectedVideo || !fileBlobs[selectedVideo]) {
-                videoElement.src = '';
-                frameInfo.style.display = 'none';
-                return;
-            }
-            videoElement.src = URL.createObjectURL(fileBlobs[selectedVideo]);
-            const results = await fetchResults();
-            if (results[selectedVideo] && results[selectedVideo].frame_results) {
-                frameResults = results[selectedVideo].frame_results.reduce((acc, frame) => {
-                    const frameNum = parseInt(frame.filename.split('_frame_')[1]);
-                    acc[frameNum] = frame;
-                    return acc;
-                }, {});
-            }
-            videoElement.load();
-            filterFramesByVideo(); // Update frames when video changes
-        }
 
         videoElement.addEventListener('loadedmetadata', () => {
             highlightCanvas.width = videoElement.videoWidth;
