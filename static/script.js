@@ -1,11 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
     const pagePath = window.location.pathname;
     let uploadArea, input, browseBtn, startProcessingBtn, preview, progress, progressBar, progressText, resultDiv, clearButton, realSection, fakeSection, noFaceSection, realFiles, fakeFiles, noFaceFiles, modal, modalImage, modalVideo, modalInfo, closeModal, videoPlayer, videoElement, prevFrame, nextFrame, highlightCanvas, frameInfo, videoSelect;
-    let highlightCtx; // Declare highlightCtx globally within the video context
+    let highlightCtx;
     let fileBlobs = {};
     let allResults = {};
 
-    // Initialize page-specific elements
     if (pagePath === '/image') {
         uploadArea = document.getElementById('image-upload-area');
         input = document.getElementById('image-input');
@@ -55,17 +54,18 @@ document.addEventListener('DOMContentLoaded', () => {
         highlightCanvas = document.getElementById('highlight-canvas');
         frameInfo = document.getElementById('frame-info');
         videoSelect = document.getElementById('video-select');
-        highlightCtx = highlightCanvas.getContext('2d'); // Initialize highlightCtx here
+        highlightCtx = highlightCanvas.getContext('2d');
     } else {
-        return; // Homepage doesn't need JavaScript
+        return;
     }
 
-    // Video frame navigation and highlighting logic (moved to top-level scope)
-    let frameInterval = 1; // 1 FPS (matches backend FRAME_RATE)
+    let frameInterval = 1;
     let frameResults = {};
 
     function drawHighlight(faceBox, isFake) {
-        if (!highlightCtx || !highlightCanvas) return;
+        if (!highlightCtx || !highlightCanvas || !videoElement) return;
+        highlightCanvas.width = videoElement.videoWidth;
+        highlightCanvas.height = videoElement.videoHeight;
         highlightCtx.clearRect(0, 0, highlightCanvas.width, highlightCanvas.height);
         if (faceBox) {
             const scaleX = highlightCanvas.width / videoElement.videoWidth;
@@ -111,14 +111,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }, {});
         }
         videoElement.load();
-        filterFramesByVideo(); // Update frames when video changes
+        filterFramesByVideo();
     }
 
-    // Helper function to seek to a specific frame
     function seekToFrame(frameNum) {
         if (!videoElement) return;
         const targetTime = frameNum * frameInterval;
-        if (videoElement.readyState >= 2) { // Check if metadata is loaded
+        if (videoElement.readyState >= 2) {
             videoElement.currentTime = targetTime;
         } else {
             console.error(`Video not ready to seek to ${targetTime} seconds. Current readyState: ${videoElement.readyState}`);
@@ -128,12 +127,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Validate file formats
     function validateFile(file) {
         const validImageExts = ['.jpg', '.jpeg', '.png'];
         const validVideoExts = ['.mp4', '.avi', '.mov', '.mkv'];
         const ext = '.' + file.name.split('.').pop().toLowerCase();
-        console.log(`Validating file: ${file.name}, extension: ${ext}`); // Debug log
+        console.log(`Validating file: ${file.name}, extension: ${ext}`);
         if (pagePath === '/image') {
             const isValid = validImageExts.includes(ext);
             console.log(`Image validation result: ${isValid}`);
@@ -145,7 +143,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Preview files before upload
     function handleFilePreview(files) {
         preview.innerHTML = '';
         preview.classList.add('hidden');
@@ -192,7 +189,6 @@ document.addEventListener('DOMContentLoaded', () => {
         resultDiv.innerHTML = '';
     }
 
-    // Drag-and-drop functionality
     uploadArea.addEventListener('dragover', (e) => e.preventDefault());
     uploadArea.addEventListener('drop', (e) => {
         e.preventDefault();
@@ -201,22 +197,22 @@ document.addEventListener('DOMContentLoaded', () => {
         handleFilePreview(files);
     });
 
-    // Browse button functionality
     browseBtn.addEventListener('click', () => input.click());
     input.addEventListener('change', () => handleFilePreview(input.files));
 
-    // Fetch results
     async function fetchResults() {
         try {
             const response = await fetch('/results');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             return await response.json();
         } catch (error) {
-            console.error('Error fetching results:', error);
+            console.error('Error fetching results:', error.message);
             return {};
         }
     }
 
-    // Show modal
     async function showModal(filename, isPreview = false) {
         const imageConfidences = await fetchResults();
         const result = imageConfidences[filename];
@@ -235,26 +231,6 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.style.display = 'flex';
     }
 
-    // Enhanced modal for frame details
-    function showFrameModal(frameFilename, videoFilename) {
-        const results = allResults[videoFilename];
-        if (results && results.frame_results) {
-            const frame = results.frame_results.find(f => f.filename === frameFilename);
-            if (frame) {
-                modalVideo.src = `/TempFrames/${frameFilename}.jpg`; // Show the frame image
-                modalInfo.innerHTML = `
-                    Frame: ${frameFilename.split('_frame_')[1]}<br>
-                    Class: ${frame.class || 'N/A'}<br>
-                    Confidence: ${(frame.confidence * 100).toFixed(2)}%<br>
-                    Face Detected: ${frame.face_detected ? 'Yes' : 'No'}<br>
-                    ${frame.face_box ? `Face Box: x=${frame.face_box.x}, y=${frame.face_box.y}, w=${frame.face_box.width}, h=${frame.face_box.height}` : ''}
-                `;
-                modal.style.display = 'flex';
-            }
-        }
-    }
-
-    // Close modal
     closeModal.addEventListener('click', () => {
         modal.style.display = 'none';
         if (pagePath === '/image') {
@@ -264,7 +240,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Handle processing start
     startProcessingBtn.addEventListener('click', async () => {
         const files = input.files;
         if (files.length === 0) {
@@ -331,40 +306,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Update results and populate dropdown
     async function updateResults() {
         try {
             const data = await fetchResults();
-            allResults = data; // Store all results for filtering
-            videoSelect.innerHTML = '<option value="">Select a Video</option>';
-            for (const [videoFilename, result] of Object.entries(data)) {
-                const ext = videoFilename.split('.').pop().toLowerCase();
+            allResults = data;
+            if (pagePath === '/video' && videoSelect) {
+                videoSelect.innerHTML = '<option value="">Select a Video</option>';
+            }
+            for (const [filename, result] of Object.entries(data)) {
+                const ext = filename.split('.').pop().toLowerCase();
                 const isImage = ['jpg', 'jpeg', 'png'].includes(ext);
                 const isVideo = ['mp4', 'avi', 'mov', 'mkv'].includes(ext);
 
                 if (pagePath === '/image' && !isImage) continue;
                 if (pagePath === '/video' && !isVideo) continue;
 
-                // Handle image results
                 if (isImage) {
                     const container = document.createElement('div');
                     container.className = 'file-item fade-in';
                     const element = document.createElement('img');
-                    element.src = `/uploads/${videoFilename}`;
-                    element.alt = videoFilename;
-                    element.title = videoFilename;
+                    element.src = `/uploads/${filename}`;
+                    element.alt = filename;
+                    element.title = filename;
                     element.className = 'w-full h-32 object-cover rounded-lg';
-                    element.dataset.filename = videoFilename;
+                    element.dataset.filename = filename;
                     element.onerror = () => {
-                        console.error(`Failed to load media: /uploads/${videoFilename}`);
+                        console.error(`Failed to load media: /uploads/${filename}`);
                         element.src = '';
                     };
-                    element.addEventListener('click', () => showModal(videoFilename));
+                    element.addEventListener('click', () => showModal(filename));
                     container.appendChild(element);
 
                     const infoDiv = document.createElement('div');
                     infoDiv.className = 'text-sm text-gray-600 mt-2';
-                    infoDiv.innerHTML = `<span class="truncate">${videoFilename}</span>`;
+                    infoDiv.innerHTML = `<span class="truncate">${filename}</span>`;
                     if (!result.no_face) {
                         infoDiv.innerHTML += `<br>Confidence: ${(result.confidence * 100).toFixed(2)}%`;
                     }
@@ -382,22 +357,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                // Populate video dropdown
-                if (isVideo) {
+                if (isVideo && pagePath === '/video' && videoSelect) {
                     const option = document.createElement('option');
-                    option.value = videoFilename;
-                    option.textContent = videoFilename;
+                    option.value = filename;
+                    option.textContent = filename;
                     videoSelect.appendChild(option);
                 }
             }
-            // Initially, show frames for the first video or none if no video is selected
-            filterFramesByVideo();
+            if (pagePath === '/video') {
+                filterFramesByVideo();
+            }
         } catch (error) {
-            resultDiv.innerHTML = `<span class="text-red-600 fade-in">Error: Failed to fetch results</span>`;
+            resultDiv.innerHTML = `<span class="text-red-600 fade-in">Error: Failed to fetch results - ${error.message}</span>`;
         }
     }
 
-    // Filter frames based on selected video with color-coded confidence
     function filterFramesByVideo() {
         if (!realFiles || !fakeFiles || !noFaceFiles || !realSection || !fakeSection || !noFaceSection || !videoSelect) return;
         const selectedVideo = videoSelect.value;
@@ -408,7 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fakeSection.classList.add('hidden');
         noFaceSection.classList.add('hidden');
 
-        if (!selectedVideo) return; // Don't show any frames if no video is selected
+        if (!selectedVideo) return;
 
         const result = allResults[selectedVideo];
         if (result && result.frame_results) {
@@ -423,14 +397,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 element.className = 'w-full h-32 object-cover rounded-lg';
                 element.dataset.filename = frameFilename;
                 element.dataset.video = selectedVideo;
-                // Color-coded confidence
                 const confidence = frame.confidence * 100;
                 if (confidence >= 90) {
-                    element.style.backgroundColor = '#90ee90'; // Light green for high confidence
+                    element.style.backgroundColor = '#4CAF50'; // Darker green
                 } else if (confidence >= 70) {
-                    element.style.backgroundColor = '#ffff99'; // Light yellow for medium confidence
+                    element.style.backgroundColor = '#FFCA28'; // Darker yellow
                 } else {
-                    element.style.backgroundColor = '#ff9999'; // Light red for low confidence
+                    element.style.backgroundColor = '#F44336'; // Darker red
                 }
                 element.onerror = () => {
                     console.error(`Failed to load frame: /TempFrames/${frameFilename}.jpg`);
@@ -440,8 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     videoSelect.value = selectedVideo;
                     loadVideoAndFrames();
                     const frameNum = parseInt(frameFilename.split('_frame_')[1]);
-                    seekToFrame(frameNum); // Use helper function to seek
-                    showFrameModal(frameFilename, selectedVideo); // Show enhanced modal
+                    seekToFrame(frameNum);
                 });
                 container.appendChild(element);
 
@@ -467,7 +439,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Clear results
     clearButton.addEventListener('click', async () => {
         try {
             const response = await fetch('/clear', { method: 'POST' });
@@ -501,44 +472,54 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Video-specific event listeners
     if (pagePath === '/video') {
         videoElement.addEventListener('loadedmetadata', () => {
-            highlightCanvas.width = videoElement.videoWidth;
-            highlightCanvas.height = videoElement.videoHeight;
+            if (highlightCanvas) {
+                highlightCanvas.width = videoElement.videoWidth;
+                highlightCanvas.height = videoElement.videoHeight;
+            }
         });
 
         videoElement.addEventListener('timeupdate', () => {
-            const currentFrame = Math.floor(videoElement.currentTime * frameInterval);
-            const frameResult = frameResults[currentFrame];
-            if (frameResult && frameResult.face_detected) {
-                drawHighlight(frameResult.face_box, frameResult.class === 'fake');
-                updateFrameInfo(currentFrame);
-            } else {
-                drawHighlight(null);
-                frameInfo.style.display = 'none';
+            if (highlightCanvas && videoElement) {
+                if (highlightCanvas.width !== videoElement.videoWidth || highlightCanvas.height !== videoElement.videoHeight) {
+                    highlightCanvas.width = videoElement.videoWidth;
+                    highlightCanvas.height = videoElement.videoHeight;
+                }
+                const currentFrame = Math.floor(videoElement.currentTime * frameInterval);
+                const frameResult = frameResults[currentFrame];
+                if (frameResult && frameResult.face_detected) {
+                    drawHighlight(frameResult.face_box, frameResult.class === 'fake');
+                    updateFrameInfo(currentFrame);
+                } else {
+                    drawHighlight(null);
+                    frameInfo.style.display = 'none';
+                }
             }
         });
 
         prevFrame.addEventListener('click', () => {
-            const currentTime = videoElement.currentTime;
-            const newTime = Math.max(0, currentTime - frameInterval);
-            videoElement.currentTime = newTime;
-            updateFrameInfo(Math.floor(newTime * frameInterval));
+            if (videoElement) {
+                const currentTime = videoElement.currentTime;
+                const newTime = Math.max(0, currentTime - frameInterval);
+                videoElement.currentTime = newTime;
+                updateFrameInfo(Math.floor(newTime * frameInterval));
+            }
         });
 
         nextFrame.addEventListener('click', () => {
-            const currentTime = videoElement.currentTime;
-            videoElement.currentTime = currentTime + frameInterval;
-            updateFrameInfo(Math.floor((currentTime + frameInterval) * frameInterval));
+            if (videoElement) {
+                const currentTime = videoElement.currentTime;
+                videoElement.currentTime = currentTime + frameInterval;
+                updateFrameInfo(Math.floor((currentTime + frameInterval) * frameInterval));
+            }
         });
 
         videoSelect.addEventListener('change', () => {
             loadVideoAndFrames();
-            filterFramesByVideo(); // Update frames on video selection
+            filterFramesByVideo();
         });
     }
 
-    // Load initial results
     updateResults();
 });
