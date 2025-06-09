@@ -1,4 +1,6 @@
 Flask==2.0.0
 tensorflow==2.18.1
 opencv-python==4.11.0.86
-numpy==1.19.0
+numpy==1.24.0
+setuptools>=58.0.4
+wheel
