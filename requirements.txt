@@ -3,3 +3,4 @@ tensorflow==2.18.1
 opencv-python==4.11.0.86
 setuptools>=58.0.4
 wheel
+gunicorn==20.1.0
