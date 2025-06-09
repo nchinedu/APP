@@ -100,7 +100,6 @@ tensorflow-io-gcs-filesystem==0.31.0
 termcolor==3.1.0
 threadpoolctl==3.6.0
 tifffile==2025.5.10
-torch @ file:///C:/Users/NDULUE/Downloads/torch-2.7.0-cp310-cp310-win_amd64.whl#sha256=2ad79d0d8c2a20a37c5df6052ec67c2078a2c4e9a96dd3a8b55daaff6d28ea29
 tornado==6.4.2
 traitlets==5.14.3
 ttkthemes==3.2.2
