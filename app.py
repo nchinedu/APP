@@ -137,7 +137,8 @@ def process_video(file):
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 current_frame = int(cap.get(cv2.CAP_PROP_POS_FRAMES) / frame_interval)
                 frame_filename = f"{file.filename}_frame_{current_frame}"
-                frame_path = os.path.join(temp_dir, f"{frame_filename}.jpg")
+                # Save the frame as an image for thumbnail display
+                frame_path = os.path.join(TEMP_FOLDER, f"{frame_filename}.jpg")
                 cv2.imwrite(frame_path, cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR))
                 result = process_image(frame_rgb, frame_filename)
                 frame_results.append(result)
@@ -146,19 +147,15 @@ def process_video(file):
         cap.release()
 
         if not any(r.get('face_detected', False) for r in frame_results):
-            video_result = {
+            return {
                 'filename': file.filename,
                 'no_face': True
             }
-        else:
-            video_result = {
-                'filename': file.filename,
-                'frame_results': frame_results
-            }
 
-        with progress_lock:  # Ensure thread safety
-            image_confidences[file.filename] = video_result
-        return video_result
+        return {
+            'filename': file.filename,
+            'frame_results': frame_results
+        }
 
     except Exception as e:
         app.logger.error(f"Error processing video {file.filename}: {str(e)}")
@@ -200,19 +197,15 @@ def serve_temp_frame(filename):
 @app.route('/progress')
 def progress():
     def generate():
-        global progress_data, progressing_active
         while True:
-            with progress_lock:
-                if not processing_active:
-                        break
-                yield f"data: {json.dumps(progress_data)}\n\n"
+            yield f"data: {json.dumps(progress_data)}\n\n"
             import time
-            time.sleep(0.1)  # Adjust interval as needed
-    return Response(stream_with_context(generate()), mimetype='text/event-stream')
+            time.sleep(0.1)
+    return Response(generate(), mimetype='text/event-stream')
 
 @app.route('/upload', methods=['POST'])
 def upload_files():
-    global progress_data, processing_active
+    global progress_data
     if 'files' not in request.files:
         return jsonify({'error': 'No files provided'}), 400
 
@@ -221,9 +214,7 @@ def upload_files():
         return jsonify({'error': 'No files selected'}), 400
 
     total_files = len(files)
-    with progress_lock:
-        progress_data = {'processed': 0, 'total': total_files}
-        processing_active = True
+    progress_data = {'processed': 0, 'total': total_files}
     results = []
 
     for file in files:
@@ -252,12 +243,9 @@ def upload_files():
             else:
                 results.append({'error': f'Unsupported file type: {file_ext}', 'filename': file.filename})
             
-            with progress_lock:
-                progress_data['processed'] += 1
-                app.logger.debug(f"Progress: {progress_data['processed']}/{progress_data['total']}")
+            progress_data['processed'] += 1
+            app.logger.debug(f"Progress: {progress_data['processed']}/{progress_data['total']}")
 
-    with progress_lock:
-        processing_active = False
     try:
         with open('image_confidences.json', 'w') as f:
             json.dump(image_confidences, f, indent=4)
@@ -266,21 +254,10 @@ def upload_files():
         return jsonify({'error': 'Failed to save results'}), 500
 
     return jsonify(results)
+
 @app.route('/results')
 def get_results():
-    try:
-        with open('image_confidences.json', 'r') as f:
-            data = json.load(f)
-        return jsonify(data)
-    except FileNotFoundError:
-        app.logger.error("image_confidences.json not found")
-        return jsonify({'error': 'No results available'}), 404
-    except json.JSONDecodeError:
-        app.logger.error("Failed to decode image_confidences.json")
-        return jsonify({'error': 'Invalid results data'}), 500
-    except Exception as e:
-        app.logger.error(f"Error fetching results: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+    return jsonify(image_confidences)
 
 @app.route('/clear', methods=['POST'])
 def clear_results():
