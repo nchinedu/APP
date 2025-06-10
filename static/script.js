@@ -96,31 +96,31 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadVideoAndFrames() {
         if (!videoSelect || !videoElement || !frameInfo) return;
         const selectedVideo = videoSelect.value;
-        if (!selectedVideo || !allResults[selectedVideo]) {
+        if (!selectedVideo || !fileBlobs[selectedVideo]) {
             videoElement.src = '';
             frameInfo.style.display = 'none';
             return;
         }
-        videoElement.src = `/uploads/${selectedVideo}`;
-        const results = allResults; // Use cached results to avoid repeated fetches
+        videoElement.src = URL.createObjectURL(fileBlobs[selectedVideo]);
+        const results = await fetchResults();
         if (results[selectedVideo] && results[selectedVideo].frame_results) {
             frameResults = results[selectedVideo].frame_results.reduce((acc, frame) => {
-                const frameNum = parseInt(frame.filename.split('_frame_')[1]) || 0;
+                const frameNum = parseInt(frame.filename.split('_frame_')[1]);
                 acc[frameNum] = frame;
                 return acc;
             }, {});
-            frameInterval = 1; // Adjust based on your FRAME_RATE from app.py
-            videoElement.load();
-            seekToFrame(0); // Start at first frame
         }
+        videoElement.load();
+        filterFramesByVideo();
     }
-    
+
     function seekToFrame(frameNum) {
-        if (!videoElement || !frameResults[frameNum]) return;
+        if (!videoElement) return;
         const targetTime = frameNum * frameInterval;
         if (videoElement.readyState >= 2) {
             videoElement.currentTime = targetTime;
         } else {
+            console.error(`Video not ready to seek to ${targetTime} seconds. Current readyState: ${videoElement.readyState}`);
             videoElement.addEventListener('loadedmetadata', () => {
                 videoElement.currentTime = targetTime;
             }, { once: true });
@@ -206,14 +206,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            const data = await response.json();
-            return data;
+            return await response.json();
         } catch (error) {
             console.error('Error fetching results:', error.message);
-            resultDiv.innerHTML = `<span class="text-red-600 fade-in">Error: Failed to fetch results - ${error.message}</span>`;
             return {};
         }
     }
+
     async function showModal(filename, isPreview = false) {
         const imageConfidences = await fetchResults();
         const result = imageConfidences[filename];
@@ -255,14 +254,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         if (!validFiles) return;
-    
+
         const formData = new FormData();
         Array.from(files).forEach(file => formData.append('files', file));
-    
-        progress.classList.remove('hidden'); // Show progress
+
+        progress.classList.remove('hidden');
         progressBar.style.width = '0%';
         progressText.textContent = '0%';
-    
+
         const eventSource = new EventSource('/progress');
         eventSource.onmessage = (event) => {
             const data = JSON.parse(event.data);
@@ -273,8 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 progressText.textContent = `${percentage}%`;
                 if (processed >= total) {
                     eventSource.close();
-                    progress.classList.add('hidden'); // Hide progress after completion
-                    updateResults(); // Fetch and update results
+                    progress.classList.add('hidden');
                     if (pagePath === '/video' && files.length > 0) {
                         videoPlayer.classList.remove('hidden');
                         loadVideoAndFrames();
@@ -287,17 +285,19 @@ document.addEventListener('DOMContentLoaded', () => {
             progress.classList.add('hidden');
             resultDiv.innerHTML = `<span class="text-red-600 fade-in">Error: Failed to receive progress updates</span>`;
         };
-    
+
         try {
             const response = await fetch('/upload', { method: 'POST', body: formData });
             const data = await response.json();
-            if (!response.ok) {
+            if (response.ok) {
+                resultDiv.innerHTML = `<span class="fade-in">Processed ${data.length} file(s).</span>`;
+                updateResults();
+                const errors = data.filter(r => r.error);
+                if (errors.length > 0) {
+                    resultDiv.innerHTML += `<br><span class="text-red-600 fade-in">Errors: ${errors.map(e => e.error).join(', ')}</span>`;
+                }
+            } else {
                 throw new Error(data.error || 'Upload failed');
-            }
-            resultDiv.innerHTML = `<span class="fade-in">Processed ${data.length} file(s).</span>`;
-            const errors = data.filter(r => r.error);
-            if (errors.length > 0) {
-                resultDiv.innerHTML += `<br><span class="text-red-600 fade-in">Errors: ${errors.map(e => e.error).join(', ')}</span>`;
             }
         } catch (error) {
             eventSource.close();
@@ -306,88 +306,72 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-  async function updateResults() {
-    try {
-        const data = await fetchResults();
-        allResults = data;
-        if (pagePath === '/video' && videoSelect) {
-            videoSelect.innerHTML = '<option value="">Select a Video</option>';
-        }
-        for (const [filename, result] of Object.entries(data)) {
-            const ext = filename.split('.').pop().toLowerCase();
-            const isImage = ['jpg', 'jpeg', 'png'].includes(ext);
-            const isVideo = ['mp4', 'avi', 'mov', 'mkv'].includes(ext);
+    async function updateResults() {
+        try {
+            const data = await fetchResults();
+            allResults = data;
+            if (pagePath === '/video' && videoSelect) {
+                videoSelect.innerHTML = '<option value="">Select a Video</option>';
+            }
+            for (const [filename, result] of Object.entries(data)) {
+                const ext = filename.split('.').pop().toLowerCase();
+                const isImage = ['jpg', 'jpeg', 'png'].includes(ext);
+                const isVideo = ['mp4', 'avi', 'mov', 'mkv'].includes(ext);
 
-            if (pagePath === '/image' && !isImage) continue;
-            if (pagePath === '/video' && !isVideo) continue;
+                if (pagePath === '/image' && !isImage) continue;
+                if (pagePath === '/video' && !isVideo) continue;
 
-            if (isImage) {
-                const container = document.createElement('div');
-                container.className = 'file-item fade-in';
-                const element = document.createElement('img');
-                element.src = `/uploads/${filename}`;
-                element.alt = filename;
-                element.title = filename;
-                element.className = 'w-full h-32 object-cover rounded-lg';
-                element.dataset.filename = filename;
-                element.onerror = () => {
-                    console.error(`Failed to load media: /uploads/${filename}`);
-                    element.src = '';
-                };
-                element.addEventListener('click', () => showModal(filename));
-                container.appendChild(element);
+                if (isImage) {
+                    const container = document.createElement('div');
+                    container.className = 'file-item fade-in';
+                    const element = document.createElement('img');
+                    element.src = `/uploads/${filename}`;
+                    element.alt = filename;
+                    element.title = filename;
+                    element.className = 'w-full h-32 object-cover rounded-lg';
+                    element.dataset.filename = filename;
+                    element.onerror = () => {
+                        console.error(`Failed to load media: /uploads/${filename}`);
+                        element.src = '';
+                    };
+                    element.addEventListener('click', () => showModal(filename));
+                    container.appendChild(element);
 
-                const infoDiv = document.createElement('div');
-                infoDiv.className = 'text-sm text-gray-600 mt-2';
-                infoDiv.innerHTML = `<span class="truncate">${filename}</span>`;
-                if (!result.no_face) {
-                    infoDiv.innerHTML += `<br>Confidence: ${(result.confidence * 100).toFixed(2)}%`;
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'text-sm text-gray-600 mt-2';
+                    infoDiv.innerHTML = `<span class="truncate">${filename}</span>`;
+                    if (!result.no_face) {
+                        infoDiv.innerHTML += `<br>Confidence: ${(result.confidence * 100).toFixed(2)}%`;
+                    }
+                    container.appendChild(infoDiv);
+
+                    if (result.no_face) {
+                        noFaceSection.classList.remove('hidden');
+                        noFaceFiles.appendChild(container);
+                    } else if (result.class === 'real') {
+                        realSection.classList.remove('hidden');
+                        realFiles.appendChild(container);
+                    } else {
+                        fakeSection.classList.remove('hidden');
+                        fakeFiles.appendChild(container);
+                    }
                 }
-                container.appendChild(infoDiv);
 
-                if (result.no_face) {
-                    noFaceSection.classList.remove('hidden');
-                    noFaceFiles.appendChild(container);
-                } else if (result.class === 'real') {
-                    realSection.classList.remove('hidden');
-                    realFiles.appendChild(container);
-                } else {
-                    fakeSection.classList.remove('hidden');
-                    fakeFiles.appendChild(container);
+                if (isVideo && pagePath === '/video' && videoSelect) {
+                    const option = document.createElement('option');
+                    option.value = filename;
+                    option.textContent = filename;
+                    videoSelect.appendChild(option);
                 }
             }
-
-            if (isVideo && pagePath === '/video' && videoSelect) {
-                const option = document.createElement('option');
-                option.value = filename;
-                option.textContent = filename;
-                videoSelect.appendChild(option);
-                if (result.frame_results) {
-                    result.frame_results.forEach(frame => {
-                        if (frame.no_face) {
-                            noFaceSection.classList.remove('hidden');
-                            noFaceFiles.innerHTML += `<div class="file-item"><img src="/TempFrames/${frame.filename}.jpg" alt="${frame.filename}" class="max-w-full h-auto rounded-lg"></div>`;
-                        } else if (frame.class === 'real') {
-                            realSection.classList.remove('hidden');
-                            realFiles.innerHTML += `<div class="file-item"><img src="/TempFrames/${frame.filename}.jpg" alt="${frame.filename}" class="max-w-full h-auto rounded-lg"></div>`;
-                        } else {
-                            fakeSection.classList.remove('hidden');
-                            fakeFiles.innerHTML += `<div class="file-item"><img src="/TempFrames/${frame.filename}.jpg" alt="${frame.filename}" class="max-w-full h-auto rounded-lg"></div>`;
-                        }
-                    });
-                } else if (result.no_face) {
-                    noFaceSection.classList.remove('hidden');
-                    noFaceFiles.innerHTML += `<div class="file-item"><img src="/TempFrames/${filename}_frame_0.jpg" alt="${filename}" class="max-w-full h-auto rounded-lg"></div>`;
-                }
+            if (pagePath === '/video') {
+                filterFramesByVideo();
             }
+        } catch (error) {
+            resultDiv.innerHTML = `<span class="text-red-600 fade-in">Error: Failed to fetch results - ${error.message}</span>`;
         }
-        if (pagePath === '/video') {
-            filterFramesByVideo();
-        }
-    } catch (error) {
-        resultDiv.innerHTML = `<span class="text-red-600 fade-in">Error: Failed to fetch results - ${error.message}</span>`;
     }
-}
+
     function filterFramesByVideo() {
         if (!realFiles || !fakeFiles || !noFaceFiles || !realSection || !fakeSection || !noFaceSection || !videoSelect) return;
         const selectedVideo = videoSelect.value;
@@ -496,41 +480,41 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        
+        videoElement.addEventListener('timeupdate', () => {
+            if (highlightCanvas && videoElement) {
+                if (highlightCanvas.width !== videoElement.videoWidth || highlightCanvas.height !== videoElement.videoHeight) {
+                    highlightCanvas.width = videoElement.videoWidth;
+                    highlightCanvas.height = videoElement.videoHeight;
+                }
+                const currentFrame = Math.floor(videoElement.currentTime * frameInterval);
+                const frameResult = frameResults[currentFrame];
+                if (frameResult && frameResult.face_detected) {
+                    drawHighlight(frameResult.face_box, frameResult.class === 'fake');
+                    updateFrameInfo(currentFrame);
+                } else {
+                    drawHighlight(null);
+                    frameInfo.style.display = 'none';
+                }
+            }
+        });
 
-videoElement.addEventListener('timeupdate', () => {
-    if (highlightCanvas && videoElement) {
-        if (highlightCanvas.width !== videoElement.videoWidth || highlightCanvas.height !== videoElement.videoHeight) {
-            highlightCanvas.width = videoElement.videoWidth;
-            highlightCanvas.height = videoElement.videoHeight;
-        }
-        const currentFrame = Math.floor(videoElement.currentTime * frameInterval);
-        const frameResult = frameResults[currentFrame];
-        if (frameResult && frameResult.face_detected) {
-            drawHighlight(frameResult.face_box, frameResult.class === 'fake');
-            updateFrameInfo(currentFrame);
-        } else {
-            drawHighlight(null);
-            frameInfo.style.display = 'none';
-        }
-    }
-});
+        prevFrame.addEventListener('click', () => {
+            if (videoElement) {
+                const currentTime = videoElement.currentTime;
+                const newTime = Math.max(0, currentTime - frameInterval);
+                videoElement.currentTime = newTime;
+                updateFrameInfo(Math.floor(newTime * frameInterval));
+            }
+        });
 
-prevFrame.addEventListener('click', () => {
-    if (videoElement) {
-        const currentTime = videoElement.currentTime;
-        const newFrame = Math.max(0, Math.floor(currentTime / frameInterval) - 1);
-        seekToFrame(newFrame);
-    }
-});
+        nextFrame.addEventListener('click', () => {
+            if (videoElement) {
+                const currentTime = videoElement.currentTime;
+                videoElement.currentTime = currentTime + frameInterval;
+                updateFrameInfo(Math.floor((currentTime + frameInterval) * frameInterval));
+            }
+        });
 
-nextFrame.addEventListener('click', () => {
-    if (videoElement) {
-        const currentTime = videoElement.currentTime;
-        const newFrame = Math.min(Object.keys(frameResults).length - 1, Math.floor(currentTime / frameInterval) + 1);
-        seekToFrame(newFrame);
-    }
-});
         videoSelect.addEventListener('change', () => {
             loadVideoAndFrames();
             filterFramesByVideo();
