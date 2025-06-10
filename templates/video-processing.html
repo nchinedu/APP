@@ -40,49 +40,49 @@
         <section class="text-center max-w-2xl">
             <h1 class="text-3xl font-bold mb-4 text-gray-800">Upload a Video</h1>
             <div id="video-upload-area" class="border-2 border-dashed border-gray-300 p-10 rounded-lg">
-                <p class="mb-2 text-gray-700">Drag and drop or click to upload</p>
-                <p class="text-gray-500">Upload videos to start processing. We support MP4, AVI, MOV, MKV formats.</p>
-                <input type="file" id="video-input" multiple accept="video/mp4,video/avi,video/mov,video/mkv" class="hidden">
-                <button id="video-browse" class="mt-4 bg-gray-200 px-4 py-2 rounded hover:bg-gray-300 transition">Select Videos</button>
-                <button id="video-start-processing" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition font-medium disabled:bg-blue-300" disabled>Start Processing</button>
-                <div id="video-preview" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4 hidden"></div>
-                <div id="video-progress" class="mt-4">
-                    <div class="progress-container">
-                        <div id="video-progress-bar" class="progress-bar"></div>
-                    </div>
-                    <div id="video-progress-text" class="progress-text">0%</div>
-                </div>
-                <div id="video-result" class="text-center text-lg text-gray-700 mt-4"></div>
-                <div id="video-player" class="mt-4 hidden">
-                    <select id="video-select" class="mb-2 p-2 border rounded w-full max-w-md">
-                        <option value="">Select a Video</option>
-                    </select>
-                    <div class="relative">
-                        <video id="video-element" controls class="w-full max-w-md mx-auto"></video>
-                        <canvas id="highlight-canvas" class="absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
-                    </div>
-                    <div id="frame-info" class="frame-info"></div>
-                    <div class="mt-2">
-                        <button id="prev-frame" class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">Prev Frame</button>
-                        <button id="next-frame" class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300 ml-2">Next Frame</button>
-                    </div>
-                </div>
-                <div class="flex justify-end mt-4">
-                    <button id="video-clear" class="bg-red-600 text-white py-2 px-6 rounded-lg hover:bg-red-700 transition font-medium">Clear Results</button>
-                </div>
-                <div id="video-real-section" class="section-container hidden">
-                    <h2 class="section-title">Real Frames</h2>
-                    <div id="video-real-files" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
-                </div>
-                <div id="video-fake-section" class="section-container hidden">
-                    <h2 class="section-title">Fake Frames</h2>
-                    <div id="video-fake-files" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
-                </div>
-                <div id="video-no-face-section" class="section-container hidden">
-                    <h2 class="section-title">No Face Detected</h2>
-                    <div id="video-no-face-files" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
-                </div>
-            </div>
+    <p class="mb-2 text-gray-700">Drag and drop or click to upload</p>
+    <p class="text-gray-500">Upload videos to start processing. We support MP4, AVI, MOV, MKV formats.</p>
+    <input type="file" id="video-input" multiple accept="video/mp4,video/avi,video/mov,video/mkv" class="hidden">
+    <button id="video-browse" class="mt-4 bg-gray-200 px-4 py-2 rounded hover:bg-gray-300 transition">Select Videos</button>
+    <button id="video-start-processing" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition font-medium disabled:bg-blue-300" disabled>Start Processing</button>
+    <div id="video-preview" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4 hidden"></div>
+    <div id="video-progress" class="mt-4 hidden">
+        <div class="progress-container">
+            <div id="video-progress-bar" class="progress-bar"></div>
+        </div>
+        <div id="video-progress-text" class="progress-text">0%</div>
+    </div>
+    <div id="video-result" class="text-center text-lg text-gray-700 mt-4"></div>
+    <div id="video-player" class="mt-4 hidden">
+        <select id="video-select" class="mb-2 p-2 border rounded w-full max-w-md">
+            <option value="">Select a Video</option>
+        </select>
+        <div class="relative">
+            <video id="video-element" controls class="w-full max-w-md mx-auto"></video>
+            <canvas id="highlight-canvas" class="absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
+        </div>
+        <div id="frame-info" class="frame-info"></div>
+        <div class="mt-2">
+            <button id="prev-frame" class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">Prev Frame</button>
+            <button id="next-frame" class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300 ml-2">Next Frame</button>
+        </div>
+    </div>
+    <div class="flex justify-end mt-4">
+        <button id="video-clear" class="bg-red-600 text-white py-2 px-6 rounded-lg hover:bg-red-700 transition font-medium">Clear Results</button>
+    </div>
+    <div id="video-real-section" class="section-container hidden">
+        <h2 class="section-title">Real Frames</h2>
+        <div id="video-real-files" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+    </div>
+    <div id="video-fake-section" class="section-container hidden">
+        <h2 class="section-title">Fake Frames</h2>
+        <div id="video-fake-files" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+    </div>
+    <div id="video-no-face-section" class="section-container hidden">
+        <h2 class="section-title">No Face Detected</h2>
+        <div id="video-no-face-files" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+    </div>
+</div>
         </section>
     </main>
     <div id="modal" class="modal">
