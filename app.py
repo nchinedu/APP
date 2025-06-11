@@ -35,7 +35,13 @@ for folder in [UPLOAD_FOLDER, TEMP_FOLDER]:
 
 # Dictionary to store confidences and progress
 image_confidences = {}
-progress_data = {'processed': 0, 'total': 0}
+progress_data = {'processed': 0, 'total': 0, 'status': ''}
+
+def update_progress(processed, total, status=''):
+    global progress_data
+    progress_data['processed'] = processed
+    progress_data['total'] = total
+    progress_data['status'] = status
 
 # Configuration
 THRESHOLD = 0.3
@@ -124,9 +130,18 @@ def process_video(file):
         if not cap.isOpened():
             return {'error': f'Cannot open video {file.filename}', 'filename': file.filename}
 
+        # Get total frame count for progress tracking
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         fps = cap.get(cv2.CAP_PROP_FPS)
         frame_interval = int(fps / FRAME_RATE) if fps > 0 else 1
+        estimated_frames = min(MAX_FRAMES, total_frames // frame_interval)
         frame_count = 0
+
+        # Pre-extract frames to reduce I/O overhead
+        frames_to_process = []
+        frame_paths = []
+
+        update_progress(0, 100, 'Extracting frames...')
 
         while cap.isOpened() and frame_count < MAX_FRAMES:
             ret, frame = cap.read()
@@ -137,14 +152,33 @@ def process_video(file):
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 current_frame = int(cap.get(cv2.CAP_PROP_POS_FRAMES) / frame_interval)
                 frame_filename = f"{file.filename}_frame_{current_frame}"
-                # Save the frame as an image for thumbnail display
                 frame_path = os.path.join(TEMP_FOLDER, f"{frame_filename}.jpg")
+                
+                # Save frame for display
                 cv2.imwrite(frame_path, cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR))
-                result = process_image(frame_rgb, frame_filename)
-                frame_results.append(result)
+                
+                frames_to_process.append((frame_rgb, frame_filename))
+                frame_paths.append(frame_path)
                 frame_count += 1
 
+                # Update progress for frame extraction (0-50%)
+                extraction_progress = int((frame_count / estimated_frames) * 50)
+                update_progress(extraction_progress, 100, f'Extracting frame {frame_count}/{estimated_frames}')
+
         cap.release()
+
+        # Process extracted frames
+        update_progress(50, 100, 'Processing frames...')
+        total_frames = len(frames_to_process)
+
+        for idx, (frame_rgb, frame_filename) in enumerate(frames_to_process, 1):
+            result = process_image(frame_rgb, frame_filename)
+            frame_results.append(result)
+            
+            # Update progress for frame processing (50-100%)
+            processing_progress = 50 + int((idx / total_frames) * 50)
+            update_progress(processing_progress, 100, f'Processing frame {idx}/{total_frames}')
+
 
         if not any(r.get('face_detected', False) for r in frame_results):
             return {
@@ -214,14 +248,14 @@ def upload_files():
         return jsonify({'error': 'No files selected'}), 400
 
     total_files = len(files)
-    progress_data = {'processed': 0, 'total': total_files}
     results = []
 
-    for file in files:
+    for idx, file in enumerate(files, 1):
         if file and file.filename:
             file_ext = os.path.splitext(file.filename)[1].lower()
             if file_ext in ALLOWED_IMAGE_EXTS:
                 try:
+                    update_progress(((idx - 1) * 100) // total_files, 100, f'Processing image {idx}/{total_files}: {file.filename}')
                     file_path = os.path.join(UPLOAD_FOLDER, file.filename)
                     file.save(file_path)
                     app.logger.debug(f"Saved file: {file_path}")
@@ -243,8 +277,8 @@ def upload_files():
             else:
                 results.append({'error': f'Unsupported file type: {file_ext}', 'filename': file.filename})
             
-            progress_data['processed'] += 1
-            app.logger.debug(f"Progress: {progress_data['processed']}/{progress_data['total']}")
+            update_progress((idx * 100) // total_files, 100, f'Completed {idx}/{total_files} files')
+            app.logger.debug(f"Progress: {idx}/{total_files}")
 
     try:
         with open('image_confidences.json', 'w') as f:

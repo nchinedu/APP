@@ -45,12 +45,13 @@
                 <button id="image-browse" class="mt-4 bg-gray-200 px-4 py-2 rounded hover:bg-gray-300 transition">Browse Files</button>
                 <button id="image-start-processing" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition font-medium disabled:bg-blue-300" disabled>Start Processing</button>
                 <div id="image-preview" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4 hidden"></div>
-                <div id="image-progress" class="mt-4 hidden">
-                    <div class="progress-container">
-                        <div id="image-progress-bar" class="progress-bar"></div>
-                    </div>
-                    <div id="image-progress-text" class="progress-text">0%</div>
+                <div id="image-progress" class="hidden w-full mt-4">
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div id="image-progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
                 </div>
+                <p id="image-progress-text" class="text-center mt-2">0%</p>
+                <p id="image-status-text" class="text-center text-sm text-gray-600 mt-1"></p>
+            </div>
                 <div id="image-result" class="text-center text-lg text-gray-700 mt-4"></div>
                 <div class="flex justify-end mt-4">
                     <button id="image-clear" class="bg-red-600 text-white py-2 px-6 rounded-lg hover:bg-red-700 transition font-medium">Clear Results</button>

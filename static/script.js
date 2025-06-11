@@ -265,11 +265,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const eventSource = new EventSource('/progress');
         eventSource.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            const { processed, total } = data;
+            const { processed, total, status } = data;
             if (total > 0) {
                 const percentage = Math.round((processed / total) * 100);
                 progressBar.style.width = `${percentage}%`;
                 progressText.textContent = `${percentage}%`;
+                
+                // Update status message if available
+                const statusText = document.getElementById(pagePath === '/video' ? 'video-status-text' : 'image-status-text');
+                if (statusText && status) {
+                    statusText.textContent = status;
+                }
+
                 if (processed >= total) {
                     eventSource.close();
                     progress.classList.add('hidden');
