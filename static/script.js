@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let highlightCtx;
     let fileBlobs = {};
     let allResults = {};
+    let selectedFile = null;
+    let analysisHistory = new Map(); // Store analysis results for each image
 
     if (pagePath === '/image') {
         uploadArea = document.getElementById('image-upload-area');
@@ -13,8 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
         preview = document.getElementById('image-preview');
         progress = document.getElementById('image-progress');
         progressBar = document.getElementById('image-progress-bar');
-        progressText = document.getElementById('image-progress-text');
-        resultDiv = document.getElementById('image-result');
+        progressText = document.getElementById('progress-percentage');
+        resultDiv = document.getElementById('results-content');
         clearButton = document.getElementById('image-clear');
         realSection = document.getElementById('image-real-section');
         fakeSection = document.getElementById('image-fake-section');
@@ -144,49 +146,161 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleFilePreview(files) {
-        preview.innerHTML = '';
+        const thumbnailsContainer = document.getElementById('image-thumbnails');
+        const imageCount = document.getElementById('image-count');
+        const selectedImagePreview = document.getElementById('selected-image-preview');
+        const selectedImage = document.getElementById('selected-image');
+        const selectedImageName = document.getElementById('selected-image-name');
+        
+        thumbnailsContainer.innerHTML = '';
         preview.classList.add('hidden');
         startProcessingBtn.disabled = true;
+        
         if (files.length > 0) {
             let validFiles = true;
             Array.from(files).forEach(file => {
                 if (!validateFile(file)) {
-                    resultDiv.innerHTML = `<span class="text-red-600 fade-in">Error: Unsupported file type for ${file.name}</span>`;
+                    showError(`Unsupported file type for ${file.name}`);
                     validFiles = false;
                     return;
                 }
                 fileBlobs[file.name] = file;
             });
+            
             if (!validFiles) return;
+            
             preview.classList.remove('hidden');
             startProcessingBtn.disabled = false;
-            Array.from(files).forEach(file => {
-                const container = document.createElement('div');
-                container.className = 'file-item';
-                let element;
-                if (file.type.startsWith('image/')) {
-                    element = document.createElement('img');
-                    element.src = URL.createObjectURL(file);
-                } else if (file.type.startsWith('video/')) {
-                    element = document.createElement('video');
-                    element.src = URL.createObjectURL(file);
-                    element.muted = true;
-                    element.controls = true;
-                }
-                element.alt = file.name;
-                element.title = file.name;
-                element.className = 'w-full h-32 object-cover rounded-lg';
-                element.dataset.filename = file.name;
-                element.addEventListener('click', () => showModal(file.name, true));
-                container.appendChild(element);
-                const filenameDiv = document.createElement('div');
-                filenameDiv.className = 'text-sm text-gray-600 mt-2 truncate';
-                filenameDiv.textContent = file.name;
-                container.appendChild(filenameDiv);
-                preview.appendChild(container);
+            imageCount.textContent = files.length;
+            
+            Array.from(files).forEach((file, index) => {
+                createThumbnail(file, index);
             });
+            
+            // Reinitialize Lucide icons
+            lucide.createIcons();
         }
-        resultDiv.innerHTML = '';
+    }
+
+    function createThumbnail(file, index) {
+        const thumbnails = document.getElementById('image-thumbnails');
+        const div = document.createElement('div');
+        div.className = 'relative group cursor-pointer border-2 border-gray-200 rounded-lg overflow-hidden hover:border-blue-500 transition-all duration-200';
+        div.style.width = '100px';
+        div.style.height = '100px';
+        div.style.overflow = 'hidden'; // Ensure content outside bounds is hidden for animation
+        
+        // Create image container (70% of height)
+        const imgContainer = document.createElement('div');
+        imgContainer.className = 'relative w-full';
+        imgContainer.style.height = '70%';
+        
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.alt = file.name;
+        img.className = 'w-full h-full object-cover';
+        
+        // Create result container (30% of height) for centered text and animation
+        const resultContainer = document.createElement('div');
+        resultContainer.className = 'w-full h-full flex items-center justify-center relative'; // Added relative for absolute positioning of text
+        resultContainer.style.height = '30%';
+        resultContainer.style.backgroundColor = '#f8fafc'; // Initial background, will be overridden
+        resultContainer.style.opacity = '0'; // Initial state for animation
+        resultContainer.style.transform = 'translateY(100%)'; // Initial state for animation
+        resultContainer.style.transition = 'all 0.5s ease-out'; // Smooth transition
+        
+        // Create an empty paragraph element for the result text
+        const resultText = document.createElement('p');
+        resultText.id = `result-${index}`;
+        resultText.className = 'text-lg font-bold'; // Base classes, color set by updateResultsDisplay
+        resultContainer.appendChild(resultText);
+        
+        // Add delete button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200';
+        deleteBtn.innerHTML = '<i data-lucide="x" class="h-4 w-4"></i>';
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            removeImage(index);
+        };
+        
+        imgContainer.appendChild(img);
+        imgContainer.appendChild(deleteBtn);
+        div.appendChild(imgContainer);
+        div.appendChild(resultContainer);
+        
+        div.onclick = () => selectImage(file, index);
+        thumbnails.appendChild(div);
+        lucide.createIcons();
+    }
+
+    function selectImage(file, index) {
+        const selectedImagePreview = document.getElementById('selected-image-preview');
+        const selectedImage = document.getElementById('selected-image');
+        const selectedImageName = document.getElementById('selected-image-name');
+        
+        selectedImagePreview.classList.remove('hidden');
+        selectedImage.src = URL.createObjectURL(file);
+        selectedImageName.textContent = file.name;
+        startProcessingBtn.disabled = false;
+        selectedFile = file;
+        
+        // Update thumbnail selection
+        const thumbnails = document.querySelectorAll('#image-thumbnails > div');
+        thumbnails.forEach((thumb, i) => {
+            thumb.classList.toggle('border-blue-500', i === index);
+        });
+
+        // If this image has been analyzed before, show its results
+        if (analysisHistory.has(file.name)) {
+            updateResultsDisplay(file.name, analysisHistory.get(file.name));
+        } else {
+            // Show placeholder if image hasn't been analyzed
+            resultDiv.innerHTML = `
+                <div class="text-center py-12 text-gray-500">
+                    <i data-lucide="shield" class="h-16 w-16 mx-auto mb-4 opacity-50"></i>
+                    <p id="results-placeholder">Click "Analyze Image" to process this image</p>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+    }
+
+    function removeImage(index) {
+        const thumbnails = document.querySelectorAll('#image-thumbnails > div');
+        if (thumbnails[index]) {
+            const img = thumbnails[index].querySelector('img');
+            if (img) {
+                URL.revokeObjectURL(img.src);
+                // Remove from analysis history
+                const filename = img.alt;
+                analysisHistory.delete(filename);
+            }
+            thumbnails[index].remove();
+            
+            // Update count
+            const imageCount = document.getElementById('image-count');
+            imageCount.textContent = parseInt(imageCount.textContent) - 1;
+            
+            // If no images left, hide preview and results
+            if (parseInt(imageCount.textContent) === 0) {
+                document.getElementById('image-preview').classList.add('hidden');
+                document.getElementById('selected-image-preview').classList.add('hidden');
+                startProcessingBtn.disabled = true;
+                selectedFile = null;
+                analysisHistory.clear(); // Clear analysis history
+            }
+        }
+    }
+
+    function showError(message) {
+        const errorDiv = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        errorText.textContent = message;
+        errorDiv.classList.remove('hidden');
+        setTimeout(() => {
+            errorDiv.classList.add('hidden');
+        }, 5000);
     }
 
     uploadArea.addEventListener('dragover', (e) => e.preventDefault());
@@ -197,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
         handleFilePreview(files);
     });
 
-    browseBtn.addEventListener('click', () => input.click());
+    uploadArea.addEventListener('click', () => input.click());
     input.addEventListener('change', () => handleFilePreview(input.files));
 
     async function fetchResults() {
@@ -241,242 +355,211 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     startProcessingBtn.addEventListener('click', async () => {
-        const files = input.files;
-        if (files.length === 0) {
-            resultDiv.innerHTML = `<span class="text-red-600 fade-in">No files selected</span>`;
+        if (!selectedFile) {
+            showError('No image selected');
             return;
         }
-        let validFiles = true;
-        Array.from(files).forEach(file => {
-            if (!validateFile(file)) {
-                resultDiv.innerHTML = `<span class="text-red-600 fade-in">Error: Unsupported file type for ${file.name}</span>`;
-                validFiles = false;
-            }
-        });
-        if (!validFiles) return;
-
-        const formData = new FormData();
-        Array.from(files).forEach(file => formData.append('files', file));
 
         progress.classList.remove('hidden');
+        startProcessingBtn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('files', selectedFile);
+
+        try {
         progressBar.style.width = '0%';
         progressText.textContent = '0%';
 
-        const eventSource = new EventSource('/progress');
-        eventSource.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            const { processed, total, status } = data;
-            if (total > 0) {
-                const percentage = Math.round((processed / total) * 100);
-                progressBar.style.width = `${percentage}%`;
-                progressText.textContent = `${percentage}%`;
-                
-                // Update status message if available
-                const statusText = document.getElementById(pagePath === '/video' ? 'video-status-text' : 'image-status-text');
-                if (statusText && status) {
-                    statusText.textContent = status;
-                }
+            console.log('Sending file to server:', selectedFile.name);
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
 
-                if (processed >= total) {
-                    eventSource.close();
-                    progress.classList.add('hidden');
-                    if (pagePath === '/video' && files.length > 0) {
-                        videoPlayer.classList.remove('hidden');
-                        loadVideoAndFrames();
-                    }
-                }
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-        };
-        eventSource.onerror = () => {
-            eventSource.close();
-            progress.classList.add('hidden');
-            resultDiv.innerHTML = `<span class="text-red-600 fade-in">Error: Failed to receive progress updates</span>`;
-        };
 
-        try {
-            const response = await fetch('/upload', { method: 'POST', body: formData });
-            const data = await response.json();
-            if (response.ok) {
-                resultDiv.innerHTML = `<span class="fade-in">Processed ${data.length} file(s).</span>`;
-                updateResults();
-                const errors = data.filter(r => r.error);
-                if (errors.length > 0) {
-                    resultDiv.innerHTML += `<br><span class="text-red-600 fade-in">Errors: ${errors.map(e => e.error).join(', ')}</span>`;
-                }
-            } else {
-                throw new Error(data.error || 'Upload failed');
-            }
+            const result = await response.json();
+            console.log('Raw server response:', result);
+            console.log('Confidence:', result.confidence);
+            console.log('Face detected:', result.face_detected);
+            console.log('Processing time:', result.processing_time);
+            console.log('Class:', result.class);
+
+            // Update progress bar to 100%
+            progressBar.style.width = '100%';
+            progressText.textContent = '100%';
+
+            // Update results display
+            updateResultsDisplay(selectedFile.name, result);
+
         } catch (error) {
-            eventSource.close();
+            console.error('Error processing file:', error);
+            showError(`Error processing ${selectedFile.name}: ${error.message}`);
+        } finally {
             progress.classList.add('hidden');
-            resultDiv.innerHTML = `<span class="text-red-600 fade-in">Error: ${error.message}</span>`;
+            startProcessingBtn.disabled = false;
         }
     });
 
-    async function updateResults() {
-        try {
-            const data = await fetchResults();
-            allResults = data;
-            if (pagePath === '/video' && videoSelect) {
-                videoSelect.innerHTML = '<option value="">Select a Video</option>';
-            }
-            for (const [filename, result] of Object.entries(data)) {
-                const ext = filename.split('.').pop().toLowerCase();
-                const isImage = ['jpg', 'jpeg', 'png'].includes(ext);
-                const isVideo = ['mp4', 'avi', 'mov', 'mkv'].includes(ext);
+    function updateResultsDisplay(filename, result) {
+        const resultsContent = document.getElementById('results-content');
+        
+        // Clear previous results
+        resultsContent.innerHTML = '';
 
-                if (pagePath === '/image' && !isImage) continue;
-                if (pagePath === '/video' && !isVideo) continue;
+        // Store the result in analysis history
+        analysisHistory.set(filename, result);
 
-                if (isImage) {
-                    const container = document.createElement('div');
-                    container.className = 'file-item fade-in';
-                    const element = document.createElement('img');
-                    element.src = `/uploads/${filename}`;
-                    element.alt = filename;
-                    element.title = filename;
-                    element.className = 'w-full h-32 object-cover rounded-lg';
-                    element.dataset.filename = filename;
-                    element.onerror = () => {
-                        console.error(`Failed to load media: /uploads/${filename}`);
-                        element.src = '';
-                    };
-                    element.addEventListener('click', () => showModal(filename));
-                    container.appendChild(element);
-
-                    const infoDiv = document.createElement('div');
-                    infoDiv.className = 'text-sm text-gray-600 mt-2';
-                    infoDiv.innerHTML = `<span class="truncate">${filename}</span>`;
-                    if (!result.no_face) {
-                        infoDiv.innerHTML += `<br>Confidence: ${(result.confidence * 100).toFixed(2)}%`;
-                    }
-                    container.appendChild(infoDiv);
-
-                    if (result.no_face) {
-                        noFaceSection.classList.remove('hidden');
-                        noFaceFiles.appendChild(container);
-                    } else if (result.class === 'real') {
-                        realSection.classList.remove('hidden');
-                        realFiles.appendChild(container);
-                    } else {
-                        fakeSection.classList.remove('hidden');
-                        fakeFiles.appendChild(container);
-                    }
+        // Update the thumbnail result text and styling
+        const thumbnails = document.querySelectorAll('#image-thumbnails > div');
+        thumbnails.forEach((thumb) => {
+            const img = thumb.querySelector('img');
+            if (img && img.alt === filename) {
+                const resultContainer = thumb.querySelector('div:last-child');
+                const resultText = resultContainer.querySelector('p');
+                
+                // Update result text and styling based on analysis result
+                if (result.no_face) {
+                    resultText.textContent = 'No Face';
+                    resultText.className = 'text-lg font-bold text-yellow-500';
+                    resultContainer.style.backgroundColor = '#fefcbf';
+                } else if (result.class === 'real') {
+                    resultText.textContent = 'Real';
+                    resultText.className = 'text-lg font-bold text-white';
+                    resultContainer.style.backgroundColor = '#22c55e';
+                } else {
+                    resultText.textContent = 'Fake';
+                    resultText.className = 'text-lg font-bold text-white';
+                    resultContainer.style.backgroundColor = '#ef4444';
                 }
+                
+                // Trigger animation for the result text
+                resultContainer.style.opacity = '1';
+                resultContainer.style.transform = 'translateY(0)';
+            }
+        });
 
-                if (isVideo && pagePath === '/video' && videoSelect) {
-                    const option = document.createElement('option');
-                    option.value = filename;
-                    option.textContent = filename;
-                    videoSelect.appendChild(option);
+        // Main Result Card (replicated from image)
+        const mainResultCard = document.createElement('div');
+        mainResultCard.className = 'bg-white rounded-lg p-6 text-center';
+        mainResultCard.innerHTML = `
+            <div class="flex items-center justify-center mb-4">
+                ${result.no_face 
+                    ? '<i data-lucide="alert-triangle" class="h-16 w-16 text-yellow-500"></i>'
+                    : result.class === 'real'
+                        ? '<i data-lucide="check-circle" class="h-16 w-16 text-green-500"></i>'
+                        : '<i data-lucide="alert-triangle" class="h-16 w-16 text-red-500"></i>'
                 }
-            }
-            if (pagePath === '/video') {
-                filterFramesByVideo();
-            }
-        } catch (error) {
-            resultDiv.innerHTML = `<span class="text-red-600 fade-in">Error: Failed to fetch results - ${error.message}</span>`;
+            </div>
+            <h3 class="text-2xl font-bold mb-4">
+                ${result.no_face 
+                    ? 'No Face Detected'
+                    : result.class === 'real'
+                        ? 'Real Face Detected'
+                        : 'Manipulated Face Detected'
+                }
+            </h3>
+            <div class="inline-flex items-center px-4 py-2 bg-black text-white rounded-full text-lg font-semibold mb-6">
+                ${result.confidence ? (result.confidence * 100).toFixed(1) : '0.0'}% Confidence
+            </div>
+        `;
+        resultsContent.appendChild(mainResultCard);
+
+        // Detailed statistics boxes
+        const statsGrid = document.createElement('div');
+        statsGrid.className = 'grid grid-cols-2 gap-4 mt-6';
+        statsGrid.innerHTML = `
+            <div class="text-center p-4 bg-blue-50 rounded-lg">
+                <div class="text-2xl font-bold text-blue-600">${result.face_detected ? '1' : '0'}</div>
+                <div class="text-sm text-gray-600">Face${result.face_detected ? '' : 's'} Detected</div>
+            </div>
+            <div class="text-center p-4 bg-purple-50 rounded-lg">
+                <div class="text-2xl font-bold text-purple-600">${result.processing_time ? result.processing_time.toFixed(1) : '0.0'}s</div>
+                <div class="text-sm text-gray-600">Processing Time</div>
+            </div>
+        `;
+        resultsContent.appendChild(statsGrid);
+
+        // Face Analysis section
+        const faceAnalysisSection = document.createElement('div');
+        faceAnalysisSection.className = 'mt-6 space-y-4';
+        faceAnalysisSection.innerHTML = `
+            <h3 class="text-xl font-semibold">Face Analysis</h3>
+            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div class="flex items-center">
+                    <span class="h-3 w-3 rounded-full ${result.class === 'real' ? 'bg-green-500' : 'bg-red-500'} mr-2"></span>
+                    <span class="text-gray-800">Face 1</span>
+                </div>
+                <span class="text-sm font-medium text-gray-600">
+                    ${result.class === 'real' ? 'Real' : 'Manipulated'} (${result.confidence ? (result.confidence * 100).toFixed(0) : '0'}%)
+                </span>
+            </div>
+        `;
+        // Only append if a face was detected, otherwise 'No Face Detected' handles it
+        if (result.face_detected) {
+            resultsContent.appendChild(faceAnalysisSection);
         }
+
+        // Overall Confidence Level
+        const overallConfidenceSection = document.createElement('div');
+        overallConfidenceSection.className = 'mt-6 space-y-2';
+        overallConfidenceSection.innerHTML = `
+            <div class="flex justify-between text-sm">
+                <h3 class="font-semibold">Overall Confidence Level</h3>
+                <span>${result.confidence ? (result.confidence * 100).toFixed(1) : '0.0'}%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div class="h-2.5 rounded-full ${result.class === 'real' ? 'bg-green-500' : 'bg-red-500'}" style="width: ${result.confidence ? (result.confidence * 100) : 0}%"></div>
+            </div>
+        `;
+        if (result.face_detected) {
+            resultsContent.appendChild(overallConfidenceSection);
+        }
+
+        // Reinitialize Lucide icons
+        lucide.createIcons();
     }
 
-    function filterFramesByVideo() {
-        if (!realFiles || !fakeFiles || !noFaceFiles || !realSection || !fakeSection || !noFaceSection || !videoSelect) return;
-        const selectedVideo = videoSelect.value;
-        realFiles.innerHTML = '';
-        fakeFiles.innerHTML = '';
-        noFaceFiles.innerHTML = '';
-        realSection.classList.add('hidden');
-        fakeSection.classList.add('hidden');
-        noFaceSection.classList.add('hidden');
-
-        if (!selectedVideo) return;
-
-        const result = allResults[selectedVideo];
-        if (result && result.frame_results) {
-            result.frame_results.forEach(frame => {
-                const frameFilename = frame.filename;
-                const container = document.createElement('div');
-                container.className = 'file-item fade-in';
-                const element = document.createElement('img');
-                element.src = `/TempFrames/${frameFilename}.jpg`;
-                element.alt = frameFilename;
-                element.title = frameFilename;
-                element.className = 'w-full h-32 object-cover rounded-lg';
-                element.dataset.filename = frameFilename;
-                element.dataset.video = selectedVideo;
-                const confidence = frame.confidence * 100;
-                if (confidence >= 90) {
-                    element.style.backgroundColor = '#4CAF50'; // Darker green
-                } else if (confidence >= 70) {
-                    element.style.backgroundColor = '#FFCA28'; // Darker yellow
-                } else {
-                    element.style.backgroundColor = '#F44336'; // Darker red
-                }
-                element.onerror = () => {
-                    console.error(`Failed to load frame: /TempFrames/${frameFilename}.jpg`);
-                    element.src = '';
-                };
-                element.addEventListener('click', () => {
-                    videoSelect.value = selectedVideo;
-                    loadVideoAndFrames();
-                    const frameNum = parseInt(frameFilename.split('_frame_')[1]);
-                    seekToFrame(frameNum);
-                });
-                container.appendChild(element);
-
-                const infoDiv = document.createElement('div');
-                infoDiv.className = 'text-sm text-gray-600 mt-2';
-                infoDiv.innerHTML = `<span class="truncate">Frame ${frameFilename.split('_frame_')[1]}</span>`;
-                if (!frame.no_face) {
-                    infoDiv.innerHTML += `<br>Confidence: ${(frame.confidence * 100).toFixed(2)}%`;
-                }
-                container.appendChild(infoDiv);
-
-                if (frame.no_face) {
-                    noFaceSection.classList.remove('hidden');
-                    noFaceFiles.appendChild(container);
-                } else if (frame.class === 'real') {
-                    realSection.classList.remove('hidden');
-                    realFiles.appendChild(container);
-                } else {
-                    fakeSection.classList.remove('hidden');
-                    fakeFiles.appendChild(container);
-                }
-            });
-        }
+    function resetResultsDisplay() {
+        resultDiv.innerHTML = `
+            <div class="text-center py-12 text-gray-500">
+                <i data-lucide="shield" class="h-16 w-16 mx-auto mb-4 opacity-50"></i>
+                <p id="results-placeholder">Upload images to begin analysis</p>
+            </div>
+        `;
+        lucide.createIcons();
     }
 
-    clearButton.addEventListener('click', async () => {
-        try {
-            const response = await fetch('/clear', { method: 'POST' });
-            const data = await response.json();
-            if (response.ok) {
-                resultDiv.innerHTML = '<span class="fade-in">Results cleared.</span>';
-                realSection.classList.add('hidden');
-                fakeSection.classList.add('hidden');
-                noFaceSection.classList.add('hidden');
-                realFiles.innerHTML = '';
-                fakeFiles.innerHTML = '';
-                noFaceFiles.innerHTML = '';
+    clearButton.addEventListener('click', () => {
+        // Clear all object URLs
+        Object.values(fileBlobs).forEach(file => {
+            URL.revokeObjectURL(URL.createObjectURL(file));
+        });
+        
+        // Reset the file input
                 input.value = '';
-                preview.innerHTML = '';
+        
+        // Clear the preview
                 preview.classList.add('hidden');
+        document.getElementById('image-thumbnails').innerHTML = '';
+        document.getElementById('image-count').textContent = '0';
+        
+        // Hide selected image preview
+        document.getElementById('selected-image-preview').classList.add('hidden');
+        
+        // Reset results display to initial placeholder
+        resetResultsDisplay();
+        
+        // Reset state
                 fileBlobs = {};
-                allResults = {};
-                if (pagePath === '/video') {
-                    videoPlayer.classList.add('hidden');
-                    videoElement.src = '';
-                    highlightCanvas.width = 0;
-                    highlightCanvas.height = 0;
-                    frameInfo.style.display = 'none';
-                    videoSelect.innerHTML = '<option value="">Select a Video</option>';
-                }
-            } else {
-                resultDiv.innerHTML = `<span class="text-red-600 fade-in">Error: ${data.error}</span>`;
-            }
-        } catch (error) {
-            resultDiv.innerHTML = `<span class="text-red-600 fade-in">Error: Failed to clear results</span>`;
-        }
+        selectedFile = null;
+        analysisHistory.clear(); // Clear analysis history
+        startProcessingBtn.disabled = true;
+        
+        // Reinitialize Lucide icons
+        lucide.createIcons();
     });
 
     if (pagePath === '/video') {

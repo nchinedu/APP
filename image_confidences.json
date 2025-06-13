@@ -1,1 +1,30 @@
-{}
+{
+    "frame_0004.jpg": {
+        "filename": "frame_0004.jpg",
+        "class": "fake",
+        "confidence": 0.975745065137744,
+        "face_detected": true,
+        "face_box": {
+            "x": 0,
+            "y": 0,
+            "width": 299,
+            "height": 299
+        },
+        "no_face": false,
+        "processing_time": 1.6228883266448975
+    },
+    "frame_0008 (2).jpg": {
+        "filename": "frame_0008 (2).jpg",
+        "class": "fake",
+        "confidence": 0.9923299923539162,
+        "face_detected": true,
+        "face_box": {
+            "x": 0,
+            "y": 0,
+            "width": 299,
+            "height": 299
+        },
+        "no_face": false,
+        "processing_time": 1.3968091011047363
+    }
+}

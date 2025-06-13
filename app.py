@@ -8,6 +8,7 @@ import cv2
 import tempfile
 import shutil
 import logging
+import time
 
 app = Flask(__name__)
 
@@ -81,12 +82,16 @@ def detect_and_crop_face(img_array):
 
 def process_image(img_array, filename):
     try:
+        start_time = time.time()  # Add timing
         processed_img, face_detected, face_box = detect_and_crop_face(img_array)
         
         if not face_detected:
             return {
                 'filename': filename,
-                'no_face': True
+                'no_face': True,
+                'confidence': 0.0,
+                'face_detected': False,
+                'processing_time': time.time() - start_time
             }
         
         img_array = np.array(processed_img, dtype=np.float32)
@@ -105,17 +110,26 @@ def process_image(img_array, filename):
             predicted_class = 'fake' if score > THRESHOLD else 'real'
             confidence = score if predicted_class == 'fake' else 1.0 - score
 
+        processing_time = time.time() - start_time  # Calculate total processing time
+
         return {
             'filename': filename,
             'class': predicted_class,
             'confidence': float(confidence),
             'face_detected': face_detected,
             'face_box': face_box,
-            'no_face': False
+            'no_face': False,
+            'processing_time': processing_time
         }
     except Exception as e:
         app.logger.error(f"Error processing image {filename}: {str(e)}")
-        return {'error': f"Failed to process image: {str(e)}", 'filename': filename}
+        return {
+            'error': f"Failed to process image: {str(e)}", 
+            'filename': filename,
+            'confidence': 0.0,
+            'face_detected': False,
+            'processing_time': 0.0
+        }
 
 def process_video(file):
     try:
@@ -251,43 +265,52 @@ def upload_files():
     results = []
 
     for idx, file in enumerate(files, 1):
-        if file and file.filename:
-            file_ext = os.path.splitext(file.filename)[1].lower()
-            if file_ext in ALLOWED_IMAGE_EXTS:
-                try:
-                    update_progress(((idx - 1) * 100) // total_files, 100, f'Processing image {idx}/{total_files}: {file.filename}')
-                    file_path = os.path.join(UPLOAD_FOLDER, file.filename)
-                    file.save(file_path)
-                    app.logger.debug(f"Saved file: {file_path}")
-                    img = Image.open(file_path).convert('RGB')
-                    img_array = np.array(img)
-                    result = process_image(img_array, file.filename)
-                    results.append(result)
-                    image_confidences[file.filename] = result
-                except Exception as e:
-                    app.logger.error(f"Error processing image {file.filename}: {str(e)}")
-                    results.append({'error': f"Failed to process image: {str(e)}", 'filename': file.filename})
-            elif file_ext in ALLOWED_VIDEO_EXTS:
-                result = process_video(file)
-                results.append(result)
-                if 'error' not in result:
-                    image_confidences[file.filename] = result
-                else:
-                    app.logger.error(f"Error in video result {file.filename}: {result['error']}")
-            else:
-                results.append({'error': f'Unsupported file type: {file_ext}', 'filename': file.filename})
+        try:
+            if file.filename == '':
+                continue
+
+            # Save the file
+            file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+            file.save(file_path)
+            app.logger.debug(f"Saved file: {file_path}")
+
+            # Read and process the image
+            img = cv2.imread(file_path)
+            if img is None:
+                return jsonify({'error': f'Cannot read image {file.filename}'}), 400
             
-            update_progress((idx * 100) // total_files, 100, f'Completed {idx}/{total_files} files')
-            app.logger.debug(f"Progress: {idx}/{total_files}")
+            img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            result = process_image(img_rgb, file.filename)
+            
+            # Log the result for debugging
+            app.logger.debug(f"Processing result for {file.filename}: {result}")
+            
+            results.append(result)
+            
+            # Update progress
+            progress = int((idx / total_files) * 100)
+            update_progress(progress, 100, f'Processing file {idx}/{total_files}')
 
-    try:
-        with open('image_confidences.json', 'w') as f:
-            json.dump(image_confidences, f, indent=4)
-    except Exception as e:
-        app.logger.error(f"Failed to save image_confidences.json: {str(e)}")
-        return jsonify({'error': 'Failed to save results'}), 500
+        except Exception as e:
+            app.logger.error(f"Error processing {file.filename}: {str(e)}")
+            results.append({
+                'error': str(e),
+                'filename': file.filename,
+                'confidence': 0.0,
+                'face_detected': False,
+                'processing_time': 0.0
+            })
 
-    return jsonify(results)
+    # Return the last result (since we're processing one file at a time)
+    if results:
+        return jsonify(results[-1])
+    else:
+        return jsonify({
+            'error': 'No files were processed',
+            'confidence': 0.0,
+            'face_detected': False,
+            'processing_time': 0.0
+        }), 400
 
 @app.route('/results')
 def get_results():
