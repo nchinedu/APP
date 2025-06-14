@@ -264,7 +264,34 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                // Clear all UI elements
                 resetResultsDisplay();
+                
+                // Clear thumbnails
+                thumbnails.innerHTML = '';
+                
+                // Clear video player
+                videoPlayer.classList.add("hidden");
+                videoElement.src = "";
+                videoFilename.textContent = "";
+                
+                // Reset progress
+                progress.classList.add("hidden");
+                progressBar.style.width = "0%";
+                progressText.textContent = "0%";
+                statusText.textContent = "";
+                
+                // Reset button state
+                startProcessingBtn.disabled = true;
+                
+                // Clear file storage
+                fileBlobs = {};
+                allResults = {};
+                frameResults = {};
+                selectedFiles.clear();
+                processedVideos.clear();
+                currentlySelectedFile = null;
+                
                 // Show success message
                 const successDiv = document.createElement('div');
                 successDiv.className = 'bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4';
@@ -382,10 +409,10 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             // Start progress monitoring
-            eventSource = new EventSource("/progress");
+        eventSource = new EventSource("/progress");
             
-            eventSource.onmessage = (event) => {
-                try {
+        eventSource.onmessage = (event) => {
+            try {
                     const data = JSON.parse(event.data);
                     console.log("Progress update:", data);
                     
