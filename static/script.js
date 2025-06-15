@@ -553,7 +553,7 @@ document.addEventListener('DOMContentLoaded', () => {
         resetResultsDisplay();
         
         // Reset state
-                fileBlobs = {};
+        fileBlobs = {};
         selectedFile = null;
         analysisHistory.clear(); // Clear analysis history
         startProcessingBtn.disabled = true;

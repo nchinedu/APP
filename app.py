@@ -36,6 +36,7 @@ for folder in [UPLOAD_FOLDER, TEMP_FOLDER]:
 
 # Dictionary to store confidences and progress
 image_confidences = {}
+video_confidences = {}  # Add separate storage for video results
 progress_data = {'processed': 0, 'total': 0, 'status': ''}
 
 def update_progress(processed, total, status=''):
@@ -43,6 +44,7 @@ def update_progress(processed, total, status=''):
     progress_data['processed'] = processed
     progress_data['total'] = total
     progress_data['status'] = status
+    app.logger.debug(f"Progress updated: {progress_data}")  # Add logging
 
 # Configuration
 THRESHOLD = 0.3
@@ -142,6 +144,8 @@ def process_video(file):
 
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
+            app.logger.error(f"Cannot open video {file.filename}")
+            update_progress(100, 100, f'Error: Cannot open video {file.filename}')
             return {'error': f'Cannot open video {file.filename}', 'filename': file.filename}
 
         # Get total frame count for progress tracking
@@ -156,6 +160,7 @@ def process_video(file):
         frame_paths = []
 
         update_progress(0, 100, 'Extracting frames...')
+        app.logger.debug(f"Starting frame extraction for {file.filename}")
 
         while cap.isOpened() and frame_count < MAX_FRAMES:
             ret, frame = cap.read()
@@ -165,8 +170,8 @@ def process_video(file):
             if cap.get(cv2.CAP_PROP_POS_FRAMES) % frame_interval == 0:
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 current_frame = int(cap.get(cv2.CAP_PROP_POS_FRAMES) / frame_interval)
-                frame_filename = f"{file.filename}_frame_{current_frame}"
-                frame_path = os.path.join(TEMP_FOLDER, f"{frame_filename}.jpg")
+                frame_filename = f"{file.filename}_frame_{current_frame}.jpg"  # Add .jpg extension
+                frame_path = os.path.join(TEMP_FOLDER, frame_filename)
                 
                 # Save frame for display
                 cv2.imwrite(frame_path, cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR))
@@ -178,11 +183,18 @@ def process_video(file):
                 # Update progress for frame extraction (0-50%)
                 extraction_progress = int((frame_count / estimated_frames) * 50)
                 update_progress(extraction_progress, 100, f'Extracting frame {frame_count}/{estimated_frames}')
+                app.logger.debug(f"Extracted frame {frame_count}/{estimated_frames}")
 
         cap.release()
 
+        if not frames_to_process:
+            app.logger.error(f"No frames extracted from {file.filename}")
+            update_progress(100, 100, 'Error: No frames extracted')
+            return {'error': 'No frames extracted from video', 'filename': file.filename}
+
         # Process extracted frames
         update_progress(50, 100, 'Processing frames...')
+        app.logger.debug(f"Starting frame processing for {file.filename}")
         total_frames = len(frames_to_process)
 
         for idx, (frame_rgb, frame_filename) in enumerate(frames_to_process, 1):
@@ -192,21 +204,53 @@ def process_video(file):
             # Update progress for frame processing (50-100%)
             processing_progress = 50 + int((idx / total_frames) * 50)
             update_progress(processing_progress, 100, f'Processing frame {idx}/{total_frames}')
+            app.logger.debug(f"Processed frame {idx}/{total_frames}")
 
+        # Calculate aggregate statistics
+        real_frames = sum(1 for f in frame_results if f.get('class') == 'real')
+        fake_frames = sum(1 for f in frame_results if f.get('class') == 'fake')
+        no_face_frames = sum(1 for f in frame_results if f.get('no_face'))
 
-        if not any(r.get('face_detected', False) for r in frame_results):
-            return {
-                'filename': file.filename,
-                'no_face': True
-            }
+        total_analyzed_frames = len(frame_results) - no_face_frames
+        total_confidence = sum(f.get('confidence', 0) for f in frame_results if not f.get('no_face'))
+        average_confidence = (total_confidence / total_analyzed_frames) if total_analyzed_frames > 0 else 0.0
 
-        return {
+        total_processing_time = sum(f.get('processing_time', 0) for f in frame_results)
+
+        overall_verdict = 'N/A'
+        if total_analyzed_frames > 0:
+            if real_frames > fake_frames:
+                overall_verdict = 'real'
+            elif fake_frames > real_frames:
+                overall_verdict = 'fake'
+            else:
+                overall_verdict = 'neutral' # or some other indicator for equal
+        elif no_face_frames == len(frame_results):
+            overall_verdict = 'no_face'
+
+        result = {
             'filename': file.filename,
-            'frame_results': frame_results
+            'frame_results': frame_results,
+            'real_frames': real_frames,
+            'fake_frames': fake_frames,
+            'no_face_frames': no_face_frames,
+            'average_confidence': average_confidence,
+            'frames_analyzed': total_analyzed_frames,
+            'total_frames': int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) if cap.isOpened() else len(frames_to_process), # Use actual total frames if available
+            'processing_time': total_processing_time,
+            'overall_verdict': overall_verdict
         }
+
+        # Store video results
+        video_confidences[file.filename] = result
+        app.logger.debug(f"Stored video_confidences[{file.filename}]: {video_confidences[file.filename]}")
+        update_progress(100, 100, 'Processing complete')
+        app.logger.debug(f"Completed processing {file.filename}")
+        return result
 
     except Exception as e:
         app.logger.error(f"Error processing video {file.filename}: {str(e)}")
+        update_progress(100, 100, f'Error: {str(e)}')
         return {'error': str(e), 'filename': file.filename}
     finally:
         if os.path.exists(temp_dir):
@@ -245,10 +289,21 @@ def serve_temp_frame(filename):
 @app.route('/progress')
 def progress():
     def generate():
-        while True:
-            yield f"data: {json.dumps(progress_data)}\n\n"
-            import time
-            time.sleep(0.1)
+        last_progress = -1
+        try:
+            while True:
+                current_progress = progress_data['processed']
+                if current_progress != last_progress:
+                    app.logger.debug(f"Sending progress update: {progress_data}")
+                    yield f"data: {json.dumps(progress_data)}\n\n"
+                    last_progress = current_progress
+                if current_progress >= 100:
+                    app.logger.debug("Progress complete, closing stream")
+                    break
+                time.sleep(0.1)
+        except Exception as e:
+            app.logger.error(f"Error in progress stream: {str(e)}")
+            yield f"data: {json.dumps({'error': str(e), 'processed': 100, 'total': 100})}\n\n"
     return Response(generate(), mimetype='text/event-stream')
 
 @app.route('/upload', methods=['POST'])
@@ -269,21 +324,23 @@ def upload_files():
             if file.filename == '':
                 continue
 
-            # Save the file
-            file_path = os.path.join(UPLOAD_FOLDER, file.filename)
-            file.save(file_path)
-            app.logger.debug(f"Saved file: {file_path}")
-
-            # Read and process the image
-            img = cv2.imread(file_path)
-            if img is None:
-                return jsonify({'error': f'Cannot read image {file.filename}'}), 400
+            # Get file extension
+            ext = os.path.splitext(file.filename)[1].lower()
             
-            img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            result = process_image(img_rgb, file.filename)
-            
-            # Log the result for debugging
-            app.logger.debug(f"Processing result for {file.filename}: {result}")
+            if ext in ALLOWED_VIDEO_EXTS:
+                # Process video
+                result = process_video(file)
+            elif ext in ALLOWED_IMAGE_EXTS:
+                # Process image
+                file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+                file.save(file_path)
+                img = cv2.imread(file_path)
+                if img is None:
+                    return jsonify({'error': f'Cannot read image {file.filename}'}), 400
+                img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                result = process_image(img_rgb, file.filename)
+            else:
+                return jsonify({'error': f'Unsupported file type: {ext}'}), 400
             
             results.append(result)
             
@@ -303,6 +360,7 @@ def upload_files():
 
     # Return the last result (since we're processing one file at a time)
     if results:
+        app.logger.debug(f"Returning result for {results[-1].get('filename')}: {results[-1]}")
         return jsonify(results[-1])
     else:
         return jsonify({
@@ -314,16 +372,20 @@ def upload_files():
 
 @app.route('/results')
 def get_results():
-    return jsonify(image_confidences)
+    # Combine both image and video results
+    combined_results = {**image_confidences, **video_confidences}
+    app.logger.debug(f"Serving combined results: {combined_results}")
+    return jsonify(combined_results)
 
 @app.route('/clear', methods=['POST'])
 def clear_results():
-    global image_confidences, progress_data
+    global image_confidences, video_confidences, progress_data
     image_confidences = {}
-    progress_data = {'processed': 0, 'total': 0}
+    video_confidences = {}  # Clear video results too
+    progress_data = {'processed': 0, 'total': 0, 'status': ''}
     try:
         with open('image_confidences.json', 'w') as f:
-            json.dump(image_confidences, f, indent=4)
+            json.dump({**image_confidences, **video_confidences}, f, indent=4)
         # Clear TempFrames directory
         for file in os.listdir(TEMP_FOLDER):
             file_path = os.path.join(TEMP_FOLDER, file)
@@ -332,10 +394,10 @@ def clear_results():
                     os.unlink(file_path)
             except Exception as e:
                 app.logger.error(f"Error deleting frame file {file_path}: {str(e)}")
-        return jsonify({'message': 'Results cleared successfully'})
+        return jsonify({'success': True, 'message': 'Results cleared successfully'})
     except Exception as e:
         app.logger.error(f"Error clearing results: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
