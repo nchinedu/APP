@@ -208,9 +208,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Populate Selected Frame Details
     function populateSelectedFrameDetails(frame) {
-        selectedFrameNumber.textContent = frame.frame_number !== undefined ? frame.frame_number : 'N/A';
+        // Extract frame number from filename if not directly available
+        const frameNumber = frame.frame_number !== undefined ? frame.frame_number : 
+            (frame.filename ? parseInt(frame.filename.split('_frame_')[1]) - 1 : 'N/A');
+        
+        selectedFrameNumber.textContent = frameNumber;
         selectedFrameTime.textContent = frame.processing_time ? `${frame.processing_time.toFixed(2)}s` : 'N/A';
-        selectedFrameFaces.textContent = frame.face_count !== undefined ? frame.face_count : 'N/A';
+        selectedFrameFaces.textContent = frame.face_detected ? 'True' : 'False';
         selectedFrameClassification.textContent = frame.class ? frame.class.charAt(0).toUpperCase() + frame.class.slice(1) : 'N/A';
         selectedFrameClassification.className = `font-medium px-2 py-0.5 rounded-full text-white ${frame.class === 'real' ? 'bg-green-500' : 'bg-red-500'}`;
 
