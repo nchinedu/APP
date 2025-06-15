@@ -293,14 +293,21 @@ def progress():
         try:
             while True:
                 current_progress = progress_data['processed']
+                # Only send if progress has changed or it's the very first update
                 if current_progress != last_progress:
-                    app.logger.debug(f"Sending progress update: {progress_data}")
-                    yield f"data: {json.dumps(progress_data)}\n\n"
+                    response_data = {
+                        'processed': current_progress,
+                        'total': progress_data['total'],
+                        'status': progress_data['status']
+                    }
+                    app.logger.debug(f"Sending progress update via EventSource: {response_data}")
+                    yield f"data: {json.dumps(response_data)}\n\n"
                     last_progress = current_progress
+
                 if current_progress >= 100:
-                    app.logger.debug("Progress complete, closing stream")
+                    app.logger.debug("Progress complete, closing stream.")
                     break
-                time.sleep(0.1)
+                time.sleep(0.01) # Reduced delay for more frequent updates
         except Exception as e:
             app.logger.error(f"Error in progress stream: {str(e)}")
             yield f"data: {json.dumps({'error': str(e), 'processed': 100, 'total': 100})}\n\n"

@@ -34,6 +34,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const overallVerdict = document.getElementById("overall-verdict");
     const analysisResultsSection = document.getElementById("analysis-results-section");
     const errorMessageDisplay = document.getElementById("error-message-display");
+    // New overlay elements
+    const processingOverlay = document.getElementById("processing-overlay");
+    const overlayMessage = document.getElementById("overlay-message");
+    const overlayFilename = document.getElementById("overlay-filename");
 
     let fileBlobs = {};
     let allResults = {};
@@ -453,7 +457,12 @@ document.addEventListener("DOMContentLoaded", () => {
         startProcessingBtn.disabled = true;
         progressBar.style.width = "0%";
         progressText.textContent = "0%";
-        statusText.textContent = `Processing ${currentlySelectedFile}...`;
+        statusText.textContent = `Starting processing for ${currentlySelectedFile}...`;
+
+        // Show processing overlay
+        processingOverlay.classList.remove("hidden");
+        overlayFilename.textContent = currentlySelectedFile;
+        videoElement.classList.add("blur-sm"); // Add blur effect
 
         let eventSource = null;
 
@@ -468,18 +477,33 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             // Start progress monitoring
-        eventSource = new EventSource("/progress");
+            eventSource = new EventSource("/progress");
             
-        eventSource.onmessage = (event) => {
-            try {
+            eventSource.onopen = (event) => {
+                console.log("EventSource connection opened.", event);
+            };
+
+            eventSource.onmessage = (event) => {
+                try {
+                    console.log("Raw EventSource message:", event.data);
                     const data = JSON.parse(event.data);
-                    console.log("Progress update:", data);
+                    console.log("Parsed Progress update:", data);
                     
-                    if (data.progress !== undefined) {
-                        progressBar.style.width = `${data.progress}%`;
-                        progressText.textContent = `${data.progress}%`;
+                    if (data.processed !== undefined) {
+                        const progressValue = Math.min(100, Math.max(0, data.processed));
+                        progressBar.style.width = `${progressValue}%`;
+                        progressText.textContent = `${progressValue}%`;
                         
-                        if (data.progress === 100) {
+                        // Update status message based on progress
+                        if (progressValue < 50) {
+                            statusText.textContent = `Extracting frames... ${progressValue}%`;
+                        } else if (progressValue < 100) {
+                            statusText.textContent = `Analyzing frames... ${progressValue}%`;
+                        } else {
+                            statusText.textContent = "Processing complete!";
+                        }
+                        
+                        if (progressValue === 100) {
                             eventSource.close();
                             // Wait a bit for server to finish processing
                             setTimeout(async () => {
@@ -493,7 +517,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         }
                     }
                 } catch (error) {
-                    console.error("Error parsing progress data:", error);
+                    console.error("Error parsing progress data or processing message:", error, "Raw data:", event.data);
                 }
             };
 
@@ -559,11 +583,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
             progress.classList.add("hidden");
             startProcessingBtn.disabled = true; // Disable analyze button for processed video
+            // Hide processing overlay and remove blur
+            processingOverlay.classList.add("hidden");
+            videoElement.classList.remove("blur-sm");
         } catch (error) {
             console.error("Error updating results display:", error);
             showError("Failed to update results display. Please try again.");
             progress.classList.add("hidden");
             startProcessingBtn.disabled = false;
+            // Hide processing overlay and remove blur
+            processingOverlay.classList.add("hidden");
+            videoElement.classList.remove("blur-sm");
         }
     }
 
