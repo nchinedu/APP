@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MediaTool - Video Processing</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/lucide-static@0.299.0/font/lucide.min.css" rel="stylesheet">
     <style>
         .fade-in { animation: fadeIn 0.5s ease-in; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -45,7 +44,7 @@
                 </div>
                 <div class="ml-auto">
                     <button id="video-clear" class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mr-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mr-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                         Clear All
                     </button>
                 </div>
@@ -70,11 +69,21 @@
 
                     <input type="file" id="video-input" multiple accept="video/*" class="hidden">
 
-                    <!-- Video Thumbnails -->
-                    <div id="video-preview" class="mt-4 hidden">
-                        <h3 class="text-sm font-medium mb-2">Uploaded Videos</h3>
-                        <div class="scroll-area">
-                            <div class="flex space-x-4 pb-2" id="video-thumbnails"></div>
+                    <!-- Video Preview Section -->
+                    <div id="video-preview" class="hidden space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <h3 id="uploaded-videos-heading" class="text-lg font-medium text-gray-900">Uploaded Videos (0)</h3>
+                            </div>
+                            <!-- <button id="video-clear" class="text-sm text-red-600 hover:text-red-700 flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                                Clear All
+                            </button> -->
+                        </div>
+                        <div class="relative">
+                            <div id="video-thumbnails" class="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent" style="min-height: 96px;">
+                                <!-- Thumbnails will be added here -->
+                            </div>
                         </div>
                     </div>
 
@@ -104,36 +113,86 @@
                         </div>
                     </div>
 
-                    <!-- Error Display -->
-                    <div id="video-result" class="mt-4"></div>
+                    <!-- Error Message Display -->
+                    <div id="error-message-display" class="mt-4"></div>
                 </div>
             </div>
 
             <!-- Results Section -->
-            <div class="bg-white rounded-lg shadow">
+            <div id="analysis-results-section" class="bg-white rounded-lg shadow hidden">
                 <div class="p-6">
                     <h2 class="text-xl font-bold mb-2">Analysis Results</h2>
                     <p class="text-gray-600 mb-4">Frame-by-frame deepfake detection results</p>
 
-                    <!-- Results Content -->
-                    <div id="video-results-content">
-                        <!-- Real Frames Section -->
-                        <div id="video-real-section" class="hidden">
-                            <h3 class="text-lg font-medium mb-2">Real Frames</h3>
-                            <div id="video-real-files" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-green-50 p-6 rounded-lg shadow flex flex-col items-center justify-center">
+                            <span id="real-frames-count" class="text-5xl font-bold text-green-600">0</span>
+                            <span class="text-lg text-green-700">Real Frames</span>
                         </div>
+                        <div class="bg-red-50 p-6 rounded-lg shadow flex flex-col items-center justify-center">
+                            <span id="fake-frames-count" class="text-5xl font-bold text-red-600">0</span>
+                            <span class="text-lg text-red-700">Manipulated Frames</span>
+                        </div>
+                    </div>
 
-                        <!-- Fake Frames Section -->
-                        <div id="video-fake-section" class="hidden">
-                            <h3 class="text-lg font-medium mb-2">Manipulated Frames</h3>
-                            <div id="video-fake-files" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+                    <div class="bg-white p-6 rounded-lg shadow mb-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Overall Metrics</h3>
+                        <div class="space-y-2 text-sm text-gray-700">
+                            <div class="flex justify-between items-center">
+                                <span>Average Confidence</span>
+                                <span id="average-confidence" class="font-medium">0%</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span>Frames Analyzed</span>
+                                <span id="frames-analyzed" class="font-medium">0 / 0</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span>Processing Time</span>
+                                <span id="processing-time" class="font-medium">0s</span>
+                            </div>
                         </div>
+                    </div>
 
-                        <!-- No Face Section -->
-                        <div id="video-no-face-section" class="hidden">
-                            <h3 class="text-lg font-medium mb-2">Frames Without Faces</h3>
-                            <div id="video-no-face-files" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+                    <div class="bg-white p-6 rounded-lg shadow mb-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Selected Frame Details</h3>
+                        <div class="space-y-2 text-sm text-gray-700">
+                            <div class="flex justify-between items-center">
+                                <span>Frame:</span>
+                                <span id="selected-frame-number" class="font-medium">N/A</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span>Time:</span>
+                                <span id="selected-frame-time" class="font-medium">N/A</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span>Faces:</span>
+                                <span id="selected-frame-faces" class="font-medium">N/A</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span>Classification:</span>
+                                <span id="selected-frame-classification" class="font-medium px-2 py-0.5 rounded-full text-white">N/A</span>
+                            </div>
                         </div>
+                        <h4 class="text-md font-medium text-gray-800 mt-4 mb-2">Face Analysis</h4>
+                        <div id="face-analysis-details" class="space-y-2 text-sm text-gray-700">
+                            <!-- Face analysis details will be appended here -->
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-lg shadow mb-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Frame Analysis Timeline</h3>
+                        <div class="grid grid-cols-3 gap-4 mb-2 text-sm font-medium text-gray-700">
+                            <div>Frame</div>
+                            <div>Processing Time</div>
+                            <div>Classification</div>
+                        </div>
+                        <div id="frame-timeline" class="space-y-5 text-sm text-gray-700 max-h-[180px] overflow-y-auto">
+                            <!-- Frame timeline entries will be appended here -->
+                        </div>
+                    </div>
+
+                    <div id="overall-verdict" class="bg-white p-6 rounded-lg shadow flex items-center justify-center text-lg font-semibold text-gray-800">
+                        <!-- Overall verdict will be displayed here -->
                     </div>
                 </div>
             </div>
@@ -150,9 +209,5 @@
     </div>
 
     <script src="/static/video-script.js"></script>
-    <script>
-        // Initialize Lucide icons
-        lucide.createIcons();
-    </script>
 </body>
 </html>
