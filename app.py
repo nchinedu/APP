@@ -9,6 +9,8 @@ import tempfile
 import shutil
 import logging
 import time
+import multiprocessing
+from concurrent.futures import ThreadPoolExecutor
 
 app = Flask(__name__)
 
@@ -133,6 +135,17 @@ def process_image(img_array, filename):
             'processing_time': 0.0
         }
 
+def extract_frame(args):
+    frame, frame_number, frame_filename, temp_folder = args
+    try:
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame_path = os.path.join(temp_folder, frame_filename)
+        cv2.imwrite(frame_path, cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR))
+        return (frame_rgb, frame_filename)
+    except Exception as e:
+        app.logger.error(f"Error extracting frame {frame_number}: {str(e)}")
+        return None
+
 def process_video(file):
     try:
         video_path = os.path.join(UPLOAD_FOLDER, file.filename)
@@ -148,17 +161,16 @@ def process_video(file):
             update_progress(100, 100, f'Error: Cannot open video {file.filename}')
             return {'error': f'Cannot open video {file.filename}', 'filename': file.filename}
 
-        # Get total frame count for progress tracking
+        # Get video properties
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         fps = cap.get(cv2.CAP_PROP_FPS)
-        frame_interval = int(fps / FRAME_RATE) if fps > 0 else 1
+        frame_interval = max(1, int(fps / FRAME_RATE)) if fps > 0 else 1
         estimated_frames = min(MAX_FRAMES, total_frames // frame_interval)
+        
+        # Prepare frame extraction tasks
+        frame_tasks = []
         frame_count = 0
-
-        # Pre-extract frames to reduce I/O overhead
-        frames_to_process = []
-        frame_paths = []
-
+        
         update_progress(0, 100, 'Extracting frames...')
         app.logger.debug(f"Starting frame extraction for {file.filename}")
 
@@ -168,29 +180,21 @@ def process_video(file):
                 break
 
             if cap.get(cv2.CAP_PROP_POS_FRAMES) % frame_interval == 0:
-                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 current_frame = int(cap.get(cv2.CAP_PROP_POS_FRAMES) / frame_interval)
-                frame_filename = f"{file.filename}_frame_{current_frame}.jpg"  # Add .jpg extension
-                frame_path = os.path.join(TEMP_FOLDER, frame_filename)
-                
-                # Save frame for display
-                cv2.imwrite(frame_path, cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR))
-                
-                frames_to_process.append((frame_rgb, frame_filename))
-                frame_paths.append(frame_path)
+                frame_filename = f"{file.filename}_frame_{current_frame}.jpg"
+                frame_tasks.append((frame, current_frame, frame_filename, temp_dir))
                 frame_count += 1
-
-                # Update progress for frame extraction (0-50%)
-                extraction_progress = int((frame_count / estimated_frames) * 50)
-                update_progress(extraction_progress, 100, f'Extracting frame {frame_count}/{estimated_frames}')
-                app.logger.debug(f"Extracted frame {frame_count}/{estimated_frames}")
 
         cap.release()
 
-        if not frames_to_process:
+        if not frame_tasks:
             app.logger.error(f"No frames extracted from {file.filename}")
             update_progress(100, 100, 'Error: No frames extracted')
             return {'error': 'No frames extracted from video', 'filename': file.filename}
+
+        # Extract frames in parallel using ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=min(multiprocessing.cpu_count(), 4)) as executor:
+            frames_to_process = list(filter(None, executor.map(extract_frame, frame_tasks)))
 
         # Process extracted frames
         update_progress(50, 100, 'Processing frames...')
@@ -224,7 +228,7 @@ def process_video(file):
             elif fake_frames > real_frames:
                 overall_verdict = 'fake'
             else:
-                overall_verdict = 'neutral' # or some other indicator for equal
+                overall_verdict = 'neutral'
         elif no_face_frames == len(frame_results):
             overall_verdict = 'no_face'
 
@@ -236,7 +240,7 @@ def process_video(file):
             'no_face_frames': no_face_frames,
             'average_confidence': average_confidence,
             'frames_analyzed': total_analyzed_frames,
-            'total_frames': int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) if cap.isOpened() else len(frames_to_process), # Use actual total frames if available
+            'total_frames': total_frames,
             'processing_time': total_processing_time,
             'overall_verdict': overall_verdict
         }
